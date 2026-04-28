@@ -31,8 +31,8 @@ For MCP clients that need explicit command configuration:
 For local development:
 
 ```bash
-cd mcp-server
 uv sync
+uv run pre-commit install
 REKA_VISION_API_KEY="test-key" uv run reka-mcp
 ```
 
@@ -122,7 +122,7 @@ Set the API key in your environment or `.claude/settings.json`.
 ## Release Checks
 
 ```bash
-cd mcp-server
+cd /path/to/reka-mcp
 uv build
 uv run twine check dist/*
 # Publish only after explicit approval:

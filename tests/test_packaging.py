@@ -22,7 +22,7 @@ def test_pyproject_has_publishable_pypi_metadata() -> None:
     assert re.fullmatch(r"\d+\.\d+\.\d+", project["version"])
     assert project["description"]
     assert project["readme"] == "README.md"
-    assert project["requires-python"].startswith(">=3.11")
+    assert project["requires-python"].startswith(">=3.12")
     assert project["license"]
     assert project["authors"]
     assert project["maintainers"]

@@ -6,7 +6,7 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import TYPE_CHECKING, ParamSpec
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -21,10 +21,8 @@ logger = logging.getLogger("reka_mcp.tools")
 READ_ONLY = ToolAnnotations(readOnlyHint=True, idempotentHint=True)
 DESTRUCTIVE = ToolAnnotations(destructiveHint=True, idempotentHint=True)
 
-P = ParamSpec("P")
 
-
-def logged(fn: Callable[P, Awaitable[str]]) -> Callable[P, Awaitable[str]]:
+def logged[**P](fn: Callable[P, Awaitable[str]]) -> Callable[P, Awaitable[str]]:
     @functools.wraps(fn)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> str:
         args_str = ", ".join(f"{k}={v!r}" for k, v in kwargs.items() if v is not None)

@@ -48,7 +48,6 @@ MAX_OBJECTS_RESULTS = 200
 
 
 def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
-
     @server.tool(
         name="get_transcript",
         description=(

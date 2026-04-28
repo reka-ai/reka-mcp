@@ -9,12 +9,12 @@ description = "Official Reka MCP server for video understanding"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [
     { name = "Reka AI" },
 ]
 maintainers = [
-    { name = "Reka AI", email = "support@reka.ai" },
+    { name = "Reka AI", email = "dev@reka.ai" },
 ]
 keywords = [
     "reka",
@@ -29,8 +29,8 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet",
     "Topic :: Multimedia :: Video",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -43,9 +43,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://www.reka.ai"
-Repository = "https://github.com/reka-ai/vision-agent"
-Issues = "https://github.com/reka-ai/vision-agent/issues"
-Documentation = "https://docs.reka.ai/vision"
+Repository = "https://github.com/reka-ai/reka-mcp"
+Issues = "https://github.com/reka-ai/reka-mcp/issues"
+Documentation = "https://docs.reka.ai/mcp"
 
 [project.scripts]
 reka-mcp = "reka_mcp.server:main"
@@ -67,7 +67,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 99
 
 [tool.ruff.lint]
@@ -93,7 +93,7 @@ known-first-party = ["reka_mcp"]
 "tests/**" = ["TCH"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
