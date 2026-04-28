@@ -49,7 +49,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "reka-vision": {
+    "reka-mcp": {
       "command": "uvx",
       "args": ["reka-mcp"],
       "env": {
@@ -67,7 +67,7 @@ Add to `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "reka-vision": {
+    "reka-mcp": {
       "command": "uvx",
       "args": ["reka-mcp"],
       "env": {
@@ -81,10 +81,8 @@ Add to `.cursor/mcp.json`:
 ## Claude Code Setup
 
 ```bash
-claude mcp add reka-vision -- uvx reka-mcp
+claude mcp add reka-mcp -e REKA_VISION_API_KEY=your-api-key-here -- uvx reka-mcp
 ```
-
-Set the API key in your environment or `.claude/settings.json`.
 
 ## Available Tools
 
