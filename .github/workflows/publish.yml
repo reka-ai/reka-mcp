@@ -84,3 +84,21 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-mcp-registry:
+    if: inputs.target == 'pypi' && !inputs.dry-run
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+      - name: Authenticate with MCP Registry
+        env:
+          MCP_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: ./mcp-publisher login dns --domain "reka.ai" --private-key "$MCP_PRIVATE_KEY"
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish
