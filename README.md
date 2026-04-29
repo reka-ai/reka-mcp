@@ -91,6 +91,7 @@ claude mcp add reka-mcp -e REKA_VISION_API_KEY=your-api-key-here -- uvx reka-mcp
 | `upload_video` | Upload a video from a URL or local file path |
 | `list_videos` | List videos in your account or a group |
 | `get_video` | Get video details, metadata, and feature status |
+| `update_video` | Update a video's name, title, description, or group |
 | `delete_video` | Permanently delete a video and all indexed data |
 | `create_group` | Create a new video group |
 | `list_groups` | List all video groups |

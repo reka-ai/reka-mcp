@@ -119,6 +119,29 @@ class RekaClient:
     async def get_video(self, video_id: str) -> VideoResponse:
         return VideoResponse.model_validate(await self._get(f"/v2/videos/{video_id}"))
 
+    async def update_video(
+        self,
+        video_id: str,
+        *,
+        name: str | None = None,
+        title: str | None = None,
+        description: str | None = None,
+        group_id: str | None = None,
+        group_id_provided: bool = False,
+    ) -> VideoResponse:
+        body: JsonDict = {}
+        if name is not None:
+            body["name"] = name
+        if title is not None:
+            body["title"] = title
+        if description is not None:
+            body["description"] = description
+        if group_id_provided:
+            body["group_id"] = group_id
+        return VideoResponse.model_validate(
+            await self._request("PATCH", f"/v2/videos/{video_id}", json=body)
+        )
+
     async def delete_video(self, video_id: str) -> DeleteResponse:
         return DeleteResponse.model_validate(
             await self._request("DELETE", f"/v2/videos/{video_id}")

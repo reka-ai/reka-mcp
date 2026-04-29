@@ -1,5 +1,5 @@
 # ABOUTME: Tests for video management MCP tools.
-# ABOUTME: Covers upload, list, get, delete tools and error propagation.
+# ABOUTME: Covers upload, list, get, update, delete tools and error propagation.
 
 from __future__ import annotations
 
@@ -191,6 +191,61 @@ class TestGetVideo:
             await mcp_server.call_tool(
                 "get_video", {"video_id": "00000000-0000-0000-0000-000000000000"}
             )
+
+
+class TestUpdateVideo:
+    async def test_update_returns_video(self, client: RekaClient, mcp_server: FastMCP) -> None:
+        mock_client(
+            client,
+            lambda req: httpx.Response(
+                200,
+                json={"video_id": "vid-123", "status": "uploaded", "features": {}},
+            ),
+        )
+        result = await mcp_server.call_tool(
+            "update_video", {"video_id": "vid-123", "name": "new-name"}
+        )
+        body = json.loads(tool_result_text(result))
+        assert body["video_id"] == "vid-123"
+
+    async def test_update_sends_patch(self, client: RekaClient, mcp_server: FastMCP) -> None:
+        def handler(req: httpx.Request) -> httpx.Response:
+            assert req.method == "PATCH"
+            assert "/v2/videos/vid-123" in str(req.url)
+            return httpx.Response(
+                200, json={"video_id": "vid-123", "status": "uploaded", "features": {}}
+            )
+
+        mock_client(client, handler)
+        await mcp_server.call_tool(
+            "update_video", {"video_id": "vid-123", "title": "Updated Title"}
+        )
+
+    async def test_update_move_group(self, client: RekaClient, mcp_server: FastMCP) -> None:
+        def handler(req: httpx.Request) -> httpx.Response:
+            body = json.loads(req.content)
+            assert "group_id" in body
+            assert body["group_id"] == "grp-456"
+            return httpx.Response(
+                200, json={"video_id": "vid-123", "status": "uploaded", "features": {}}
+            )
+
+        mock_client(client, handler)
+        await mcp_server.call_tool("update_video", {"video_id": "vid-123", "group_id": "grp-456"})
+
+    async def test_update_remove_from_group(self, client: RekaClient, mcp_server: FastMCP) -> None:
+        def handler(req: httpx.Request) -> httpx.Response:
+            body = json.loads(req.content)
+            assert "group_id" in body
+            assert body["group_id"] is None
+            return httpx.Response(
+                200, json={"video_id": "vid-123", "status": "uploaded", "features": {}}
+            )
+
+        mock_client(client, handler)
+        await mcp_server.call_tool(
+            "update_video", {"video_id": "vid-123", "group_id": None, "move_group": True}
+        )
 
 
 class TestDeleteVideo:

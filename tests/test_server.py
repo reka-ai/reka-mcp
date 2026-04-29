@@ -18,6 +18,7 @@ class TestCreateServer:
                 "upload_video",
                 "list_videos",
                 "get_video",
+                "update_video",
                 "delete_video",
                 "create_group",
                 "list_groups",

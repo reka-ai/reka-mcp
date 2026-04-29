@@ -104,6 +104,35 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         return json.dumps(result.model_dump())
 
     @server.tool(
+        name="update_video",
+        description=(
+            "Update a video's display name, title, description, or move it to a "
+            "different group. At least one field must be provided. To remove a "
+            "video from its group, pass group_id as null."
+        ),
+        annotations=ToolAnnotations(idempotentHint=True),
+    )
+    @logged
+    async def update_video(
+        video_id: str,
+        name: str | None = None,
+        title: str | None = None,
+        description: str | None = None,
+        group_id: str | None = None,
+        move_group: bool = False,
+        rationale: str | None = None,
+    ) -> str:
+        result = await client.update_video(
+            video_id,
+            name=name,
+            title=title,
+            description=description,
+            group_id=group_id,
+            group_id_provided=move_group or group_id is not None,
+        )
+        return json.dumps(result.model_dump())
+
+    @server.tool(
         name="delete_video",
         description=(
             "Permanently delete a video and all its indexed data (transcript, "
