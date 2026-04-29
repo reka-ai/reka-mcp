@@ -69,6 +69,14 @@ class TestWorkflowGuideResource:
         assert "get_transcript" in text
         assert "summarize_video" in text
 
+    async def test_covers_refinement_strategies(self, mcp_server: FastMCP) -> None:
+        contents = await mcp_server.read_resource("reka://docs/guide")
+        text = contents[0].content
+        assert "get_scenes" in text
+        assert "scene" in text.lower()
+        assert "second" in text.lower()
+        assert "more API calls" in text or "more expensive" in text or "cost" in text.lower()
+
 
 class TestVideoResource:
     async def test_listed_in_templates(self, mcp_server: FastMCP) -> None:

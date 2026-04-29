@@ -51,6 +51,16 @@ specific segments side by side
 Only when you already have a specific time range, or the question is about \
 a very short video (under ~2 minutes). For longer videos, always narrow \
 first with search_videos, get_objects, or get_scenes.
+
+## Improving detail on long segments
+ask_video accuracy improves with narrower time ranges. If results on a wide \
+segment seem vague or miss details, break it down:
+1. Scene-by-scene: get_scenes → call ask_video once per scene
+2. Second-by-second: call ask_video with 1-second windows across the range \
+of interest
+
+These produce significantly better results but cost more API calls — use \
+them when the default answer lacks the detail you need, not as a first pass.
 """
 
 

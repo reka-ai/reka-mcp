@@ -93,7 +93,7 @@ class TestResponseHints:
         assert "hint" in body
         assert "search_videos" in body["hint"]
 
-    async def test_no_hint_when_start_end_provided(
+    async def test_no_hint_when_narrow_start_end_provided(
         self, client: RekaClient, mcp_server: FastMCP
     ) -> None:
         mock_client(
@@ -111,6 +111,26 @@ class TestResponseHints:
         )
         body = json.loads(tool_result_text(result))
         assert "hint" not in body
+
+    async def test_hint_when_wide_time_range(
+        self, client: RekaClient, mcp_server: FastMCP
+    ) -> None:
+        mock_client(
+            client,
+            _chat_handler(expected_context=[{"video_id": "v1", "start": 0.0, "end": 120.0}]),
+        )
+        result = await mcp_server.call_tool(
+            "ask_video",
+            {
+                "question": "What's happening?",
+                "video_id": "v1",
+                "start": 0.0,
+                "end": 120.0,
+            },
+        )
+        body = json.loads(tool_result_text(result))
+        assert "hint" in body
+        assert "get_scenes" in body["hint"]
 
     async def test_no_hint_on_follow_up(self, client: RekaClient, mcp_server: FastMCP) -> None:
         mock_client(client, _chat_handler())

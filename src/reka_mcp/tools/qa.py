@@ -139,6 +139,12 @@ def register_qa_tools(
                 "to count/locate specific things, then call ask_video with "
                 "start/end."
             )
+        elif video_id is not None and start is not None and end is not None and end - start > 60:
+            result["hint"] = (
+                "This covers a wide time range. For more detailed results, "
+                "try scene-by-scene analysis (get_scenes, then ask_video per "
+                "scene) or narrow to shorter segments."
+            )
 
         return json.dumps(result)
 
