@@ -47,7 +47,8 @@ def register_search_tools(server: FastMCP, client: RekaClient) -> None:
                 "results": results,
                 "hint": (
                     "Pass these timestamps as start/end to ask_video for "
-                    "deeper visual analysis of specific moments."
+                    "deeper visual analysis, or to segment_video to detect "
+                    "and locate specific objects in those moments."
                 ),
             }
         )

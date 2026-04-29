@@ -21,6 +21,7 @@ from reka_mcp.tools.groups import register_group_tools
 from reka_mcp.tools.indexing import register_indexing_tools
 from reka_mcp.tools.qa import register_qa_tools
 from reka_mcp.tools.search import register_search_tools
+from reka_mcp.tools.segment import register_segment_tools
 from reka_mcp.tools.sub_resources import register_sub_resource_tools
 from reka_mcp.tools.videos import register_video_tools
 
@@ -67,6 +68,7 @@ def create_server(
     )
     register_search_tools(server, client)
     register_qa_tools(server, client)
+    register_segment_tools(server, client)
     register_sub_resource_tools(server, client)
     register_resources(server, client)
     return server

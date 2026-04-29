@@ -68,8 +68,7 @@ def register_qa_tools(
             "for recommended workflows. In most cases, you should first:\n"
             "- search_videos to find WHEN something happens, then pass "
             "those timestamps here as start/end\n"
-            "- get_objects to count or locate things (more accurate than "
-            "asking a counting question)\n"
+            "- segment_video to detect and locate specific objects\n"
             "- get_transcript to read what was said\n\n"
             "For single-video questions, pass video_id with start/end. "
             "For cross-video questions, pass videos — a list of "
@@ -135,15 +134,15 @@ def register_qa_tools(
         if video_id is not None and start is None:
             result["hint"] = (
                 "For more accurate results, narrow the time range first: "
-                "use search_videos to find relevant moments, or get_objects "
-                "to count/locate specific things, then call ask_video with "
-                "start/end."
+                "use search_videos to find relevant moments, or "
+                "segment_video to detect specific objects, then call "
+                "ask_video with start/end."
             )
         elif video_id is not None and start is not None and end is not None and end - start > 60:
             result["hint"] = (
                 "This covers a wide time range. For more detailed results, "
-                "try scene-by-scene analysis (get_scenes, then ask_video per "
-                "scene) or narrow to shorter segments."
+                "try scene-by-scene analysis: get_scenes, then call "
+                "ask_video or segment_video once per scene."
             )
 
         return json.dumps(result)

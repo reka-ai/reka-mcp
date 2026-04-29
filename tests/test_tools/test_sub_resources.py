@@ -1,4 +1,4 @@
-# ABOUTME: Tests for sub-resource MCP tools (transcript, captions, scenes, objects).
+# ABOUTME: Tests for sub-resource MCP tools (transcript, captions, scenes).
 # ABOUTME: Covers response shaping, truncation metadata, max_results capping, and errors.
 
 from __future__ import annotations
@@ -208,39 +208,6 @@ class TestGetScenes:
         assert body["truncated"] is False
 
 
-class TestGetObjects:
-    async def test_returns_capped_data(self, client: RekaClient, mcp_server: FastMCP) -> None:
-        objects = [
-            {
-                "start": float(i),
-                "end": float(i + 1),
-                "detections": [{"type": "person", "bbox": [0, 0, 100, 100]}],
-            }
-            for i in range(80)
-        ]
-        mock_client(
-            client,
-            lambda req: httpx.Response(200, json={"data": objects, "next_page_token": None}),
-        )
-        result = await mcp_server.call_tool("get_objects", {"video_id": "v1"})
-        body = json.loads(tool_result_text(result))
-        assert len(body["data"]) == 50
-        assert body["returned_count"] == 50
-        assert body["truncated"] is True
-
-    async def test_type_filter(self, client: RekaClient, mcp_server: FastMCP) -> None:
-        def handler(req: httpx.Request) -> httpx.Response:
-            assert "type=person" in str(req.url)
-            return httpx.Response(200, json={"data": [], "next_page_token": None})
-
-        mock_client(client, handler)
-        result = await mcp_server.call_tool(
-            "get_objects", {"video_id": "v1", "object_type": "person"}
-        )
-        body = json.loads(tool_result_text(result))
-        assert body["truncated"] is False
-
-
 class TestGetFeatureCatalog:
     async def test_returns_catalog(self, client: RekaClient, mcp_server: FastMCP) -> None:
         catalog = {
@@ -305,7 +272,6 @@ class TestSummarizeVideo:
                             "transcript": "ready",
                             "captions": "ready",
                             "embeddings": "ready",
-                            "objects": "ready",
                         },
                     },
                 )
@@ -325,30 +291,6 @@ class TestSummarizeVideo:
                         "next_page_token": None,
                     },
                 )
-            if "/objects" in url:
-                return httpx.Response(
-                    200,
-                    json={
-                        "data": [
-                            {
-                                "start": 0.0,
-                                "end": 1.0,
-                                "detections": [
-                                    {"type": "person", "bbox": [0, 0, 100, 100]},
-                                    {"type": "whiteboard", "bbox": [200, 0, 400, 300]},
-                                ],
-                            },
-                            {
-                                "start": 1.0,
-                                "end": 2.0,
-                                "detections": [
-                                    {"type": "person", "bbox": [0, 0, 100, 100]},
-                                ],
-                            },
-                        ],
-                        "next_page_token": None,
-                    },
-                )
             return httpx.Response(404, json={"error": {"message": "not found"}})
 
         mock_client(client, handler)
@@ -360,7 +302,6 @@ class TestSummarizeVideo:
         assert body["status"] == "uploaded"
         assert body["features"]["transcript"] == "ready"
         assert body["scene_count"] == 2
-        assert sorted(body["object_types"]) == ["person", "whiteboard"]
         assert "lecture" in body["transcript_preview"].lower()
 
     async def test_unindexed_video_omits_optional_fields(
@@ -381,7 +322,6 @@ class TestSummarizeVideo:
                         "transcript": "none",
                         "captions": "none",
                         "embeddings": "none",
-                        "objects": "none",
                     },
                 },
             ),
@@ -392,7 +332,6 @@ class TestSummarizeVideo:
         assert body["name"] == "Raw Video"
         assert body["features"]["transcript"] == "none"
         assert "scene_count" not in body
-        assert "object_types" not in body
         assert "transcript_preview" not in body
 
     async def test_failed_sub_resources_produce_warnings(
@@ -409,7 +348,6 @@ class TestSummarizeVideo:
                         "metadata": {"video_name": "Test", "duration": 60.0},
                         "features": {
                             "transcript": "ready",
-                            "objects": "ready",
                         },
                     },
                 )
@@ -420,8 +358,6 @@ class TestSummarizeVideo:
                 )
             if "/scenes" in url:
                 return httpx.Response(500, json={"error": {"message": "internal error"}})
-            if "/objects" in url:
-                return httpx.Response(500, json={"error": {"message": "internal error"}})
             return httpx.Response(404, json={"error": {"message": "not found"}})
 
         mock_client(client, handler)
@@ -429,7 +365,5 @@ class TestSummarizeVideo:
         body = json.loads(tool_result_text(result))
         assert body["transcript_preview"] == "Hello world."
         assert "scene_count" not in body
-        assert "object_types" not in body
-        assert len(body["warnings"]) == 2
+        assert len(body["warnings"]) == 1
         assert any("scenes" in w for w in body["warnings"])
-        assert any("objects" in w for w in body["warnings"])

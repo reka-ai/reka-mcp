@@ -1,4 +1,4 @@
-# ABOUTME: MCP tools for reading video sub-resources (transcript, captions, scenes, objects).
+# ABOUTME: MCP tools for reading video sub-resources (transcript, captions, scenes).
 # ABOUTME: Handles pagination transparently and caps response size for token efficiency.
 
 from __future__ import annotations
@@ -38,13 +38,11 @@ class VideoSummary(TypedDict):
     features: dict[str, str]
     transcript_preview: NotRequired[str]
     scene_count: NotRequired[int]
-    object_types: NotRequired[list[str]]
     warnings: NotRequired[list[str]]
 
 
 MAX_TRANSCRIPT_RESULTS = 500
 MAX_CAPTIONS_RESULTS = 200
-MAX_OBJECTS_RESULTS = 200
 
 
 def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
@@ -114,9 +112,11 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
         name="get_scenes",
         description=(
             "Get detected scene boundaries with start/end timestamps. "
-            "Use this to understand the video's structure — then pass "
-            "scene timestamps as start/end to ask_video for per-scene "
-            "analysis.\n\n"
+            "Use this to understand the video's structure, then pass scene "
+            "timestamps as start/end to:\n"
+            "- ask_video for per-scene contextual analysis\n"
+            "- segment_video to detect specific objects per scene "
+            "(scenes typically fit in segment_video's 15s max range)\n\n"
             "Requires transcript indexed with scene detection (full pipeline)."
         ),
         annotations=READ_ONLY,
@@ -131,37 +131,6 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
                 "truncated": False,
             }
         )
-
-    @server.tool(
-        name="get_objects",
-        description=(
-            "Count, locate, or track objects and people in a video. Each "
-            "unique object has a tracking ID — count distinct IDs to count "
-            "how many appear. More accurate for counting than ask_video.\n\n"
-            "Use object_type to filter (e.g. 'person', 'car'). "
-            "Use start/end to narrow results.\n\n"
-            "Requires the objects feature (full pipeline)."
-        ),
-        annotations=READ_ONLY,
-    )
-    @logged
-    async def get_objects(
-        video_id: str,
-        object_type: str | None = None,
-        start: float | None = None,
-        end: float | None = None,
-        max_results: int = 50,
-        rationale: str | None = None,
-    ) -> str:
-        max_results = min(max_results, MAX_OBJECTS_RESULTS)
-        data = await client.get_objects(
-            video_id,
-            object_type=object_type,
-            start=start,
-            end=end,
-            max_items=max_results + 1,
-        )
-        return json.dumps(_cap_list(data, max_results))
 
     @server.tool(
         name="get_feature_catalog",
@@ -181,9 +150,10 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
         name="summarize_video",
         description=(
             "Start here. Get a compact overview of a video: metadata, which "
-            "features are indexed, a transcript preview, scene count, and "
-            "detected object types. Use this to decide which tools to call "
-            "next."
+            "features are indexed, a transcript preview, and scene count. "
+            "Use this to decide which tools to call next — then use "
+            "segment_video to detect specific objects in time ranges of "
+            "interest."
         ),
         annotations=READ_ONLY,
     )
@@ -234,14 +204,11 @@ async def _build_summary(client: RekaClient, video_id: str) -> VideoSummary:
     )
 
     transcript_ready = features.get("transcript") == FeatureStatus.READY
-    objects_ready = features.get("objects") == FeatureStatus.READY
 
     tasks: dict[str, Awaitable[JsonDict | list[JsonDict]]] = {}
     if transcript_ready:
         tasks["transcript"] = client.get_transcript(video_id, format="text")
         tasks["scenes"] = client.get_scenes(video_id)
-    if objects_ready:
-        tasks["objects"] = client.get_objects(video_id, max_items=200)
 
     if tasks:
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
@@ -262,18 +229,6 @@ async def _build_summary(client: RekaClient, video_id: str) -> VideoSummary:
                 warnings.append(f"scenes: {scenes_result}")
             elif isinstance(scenes_result, list):
                 summary["scene_count"] = len(scenes_result)
-
-        if "objects" in resolved:
-            objects_result = resolved["objects"]
-            if isinstance(objects_result, BaseException):
-                warnings.append(f"objects: {objects_result}")
-            elif isinstance(objects_result, list):
-                types: set[str] = set()
-                for obj in objects_result:
-                    for det in obj.get("detections", []):
-                        if isinstance(det, dict) and det.get("type"):
-                            types.add(det["type"])
-                summary["object_types"] = sorted(types)
 
         if warnings:
             summary["warnings"] = warnings

@@ -1,5 +1,5 @@
-# ABOUTME: Tests for RekaClient search, chat, and sub-resource methods.
-# ABOUTME: Covers search_videos, chat, transcript, captions, scenes, objects, feature catalog.
+# ABOUTME: Tests for RekaClient search, chat, segment, and sub-resource methods.
+# ABOUTME: Covers search_videos, chat, segment_video, transcript, captions, scenes, objects, feature catalog.
 
 from __future__ import annotations
 
@@ -123,6 +123,76 @@ class TestChat:
             context=[{"video_id": "v1"}],
         )
         assert result["response"] == "More details."
+
+
+class TestSegmentVideo:
+    async def test_posts_segment_request(self, client: RekaClient) -> None:
+        def handler(req: httpx.Request) -> httpx.Response:
+            assert req.method == "POST"
+            assert str(req.url).endswith("/v2/videos/v1/segment")
+            body = json.loads(req.content)
+            assert body["prompts"] == [
+                {"type": "text", "text": "person"},
+                {"type": "text", "text": "laptop"},
+            ]
+            assert body["start"] == 10.0
+            assert body["end"] == 25.0
+            assert body["threshold"] == 0.5
+            return httpx.Response(
+                200,
+                json={
+                    "frames": [
+                        {
+                            "timestamp": 10.0,
+                            "detections": [
+                                {
+                                    "label": "person",
+                                    "prompt_index": 0,
+                                    "score": 0.95,
+                                    "bbox": {
+                                        "x_min": 0.1,
+                                        "y_min": 0.2,
+                                        "x_max": 0.5,
+                                        "y_max": 0.8,
+                                    },
+                                }
+                            ],
+                        }
+                    ],
+                    "frame_size": {"width": 1920, "height": 1080},
+                    "frame_count": 1,
+                },
+            )
+
+        mock_client(client, handler)
+        result = await client.segment_video(
+            "v1",
+            prompts=["person", "laptop"],
+            start=10.0,
+            end=25.0,
+            threshold=0.5,
+        )
+        assert len(result["frames"]) == 1
+        assert result["frames"][0]["detections"][0]["label"] == "person"
+        assert result["frame_count"] == 1
+
+    async def test_omits_optional_fields(self, client: RekaClient) -> None:
+        def handler(req: httpx.Request) -> httpx.Response:
+            body = json.loads(req.content)
+            assert "end" not in body
+            assert "threshold" not in body
+            return httpx.Response(
+                200,
+                json={
+                    "frames": [],
+                    "frame_size": {"width": 1920, "height": 1080},
+                    "frame_count": 0,
+                },
+            )
+
+        mock_client(client, handler)
+        result = await client.segment_video("v1", prompts=["car"], start=0.0)
+        assert result["frames"] == []
 
 
 class TestGetTranscript:

@@ -89,8 +89,8 @@ async def _run_indexing(
                     "features": feature_statuses,
                     "hint": (
                         "Video ready. Use search_videos to find moments, "
-                        "get_objects to count/track things, or ask_video "
-                        "with start/end for focused visual analysis."
+                        "segment_video to detect specific objects, or "
+                        "ask_video with start/end for focused visual analysis."
                     ),
                 }
 

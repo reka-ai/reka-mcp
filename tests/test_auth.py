@@ -62,4 +62,4 @@ class TestServerAuthWiring:
             auth_token="my-secret",
         )
         tools = await server.list_tools()
-        assert len(tools) == 16
+        assert len(tools) == 17

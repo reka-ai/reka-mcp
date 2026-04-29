@@ -223,6 +223,27 @@ class RekaClient:
         resp = await self._post_json("/v2/chat", {"messages": messages, "context": context})
         return ChatResponse(response=resp.get("response", ""), model=resp.get("model", ""))
 
+    # -- Segment --
+
+    async def segment_video(
+        self,
+        video_id: str,
+        *,
+        prompts: list[str],
+        start: float,
+        end: float | None = None,
+        threshold: float | None = None,
+    ) -> JsonDict:
+        body: JsonDict = {
+            "prompts": [{"type": "text", "text": p} for p in prompts],
+            "start": start,
+        }
+        if end is not None:
+            body["end"] = end
+        if threshold is not None:
+            body["threshold"] = threshold
+        return await self._post_json(f"/v2/videos/{video_id}/segment", body)
+
     # -- Sub-resources --
 
     _SUB_RESOURCE_PAGE_LIMIT = 50

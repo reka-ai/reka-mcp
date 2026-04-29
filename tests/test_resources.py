@@ -64,7 +64,7 @@ class TestWorkflowGuideResource:
         contents = await mcp_server.read_resource("reka://docs/guide")
         text = contents[0].content
         assert "search_videos" in text
-        assert "get_objects" in text
+        assert "segment_video" in text
         assert "ask_video" in text
         assert "get_transcript" in text
         assert "summarize_video" in text

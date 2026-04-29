@@ -29,7 +29,7 @@ class TestCreateServer:
                 "get_transcript",
                 "get_captions",
                 "get_scenes",
-                "get_objects",
+                "segment_video",
                 "get_feature_catalog",
                 "summarize_video",
             ]
@@ -66,7 +66,7 @@ class TestCreateServer:
             "get_transcript",
             "get_captions",
             "get_scenes",
-            "get_objects",
+            "segment_video",
             "get_feature_catalog",
             "summarize_video",
         }
@@ -118,7 +118,6 @@ class TestAgentGuidance:
         tools = {t.name: t for t in await server.list_tools()}
         desc = tools["ask_video"].description
         assert "search_videos" in desc
-        assert "get_objects" in desc
         assert "get_transcript" in desc
 
     async def test_search_videos_suggests_ask_video_with_timestamps(self) -> None:
@@ -128,12 +127,12 @@ class TestAgentGuidance:
         assert "ask_video" in desc
         assert "start/end" in desc
 
-    async def test_get_objects_positions_itself_for_counting(self) -> None:
+    async def test_segment_video_describes_detection(self) -> None:
         server = create_server(api_url="http://localhost:8000", api_key="test-key")
         tools = {t.name: t for t in await server.list_tools()}
-        desc = tools["get_objects"].description
-        assert "count" in desc.lower()
-        assert "tracking" in desc.lower()
+        desc = tools["segment_video"].description
+        assert "detect" in desc.lower()
+        assert "bounding box" in desc.lower()
 
     async def test_workflow_guide_resource_exists(self) -> None:
         server = create_server(api_url="http://localhost:8000", api_key="test-key")
