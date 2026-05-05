@@ -30,6 +30,36 @@ class TestAuthHeader:
         assert c._http.headers["x-api-key"] == "my-secret"
 
 
+class TestMcpSessionIdHeader:
+    async def test_sends_session_id_when_contextvar_set(self, client: RekaClient) -> None:
+        from reka_mcp.client import mcp_session_id_var
+
+        captured_headers: dict = {}
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            captured_headers.update(req.headers)
+            return httpx.Response(200, json={"results": []})
+
+        mock_client(client, handler)
+        token = mcp_session_id_var.set("sess-abc")
+        try:
+            await client.list_videos()
+        finally:
+            mcp_session_id_var.reset(token)
+        assert captured_headers["x-mcp-session-id"] == "sess-abc"
+
+    async def test_omits_session_id_when_contextvar_unset(self, client: RekaClient) -> None:
+        captured_headers: dict = {}
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            captured_headers.update(req.headers)
+            return httpx.Response(200, json={"results": []})
+
+        mock_client(client, handler)
+        await client.list_videos()
+        assert "x-mcp-session-id" not in captured_headers
+
+
 class TestErrorHandling:
     async def test_401_raises_auth_error(self, client: RekaClient) -> None:
         mock_client(

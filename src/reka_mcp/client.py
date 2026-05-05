@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import logging
 import time
 from typing import TYPE_CHECKING, Any, TypedDict
@@ -24,6 +25,10 @@ from reka_mcp.models import (
 from reka_mcp.pipelines import Feature
 
 logger = logging.getLogger(__name__)
+
+mcp_session_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "mcp_session_id", default=None
+)
 
 JsonDict = dict[str, Any]
 
@@ -364,11 +369,22 @@ class RekaClient:
         data: dict[str, str] | None = None,
         files: dict[str, tuple[str, bytes, str]] | None = None,
     ) -> JsonDict:
+        headers: dict[str, str] = {}
+        session_id = mcp_session_id_var.get()
+        if session_id:
+            headers["x-mcp-session-id"] = session_id
+
         last_exc: Exception | None = None
         t0 = time.monotonic()
         for attempt in range(self._MAX_RETRIES):
             resp = await self._http.request(
-                method, path, params=params, json=json, data=data, files=files
+                method,
+                path,
+                params=params,
+                json=json,
+                data=data,
+                files=files,
+                headers=headers,
             )
             elapsed_ms = (time.monotonic() - t0) * 1000
             if resp.status_code < 500:
