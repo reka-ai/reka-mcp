@@ -75,6 +75,12 @@ def create_server(
 
 
 def main() -> None:
+    import sys
+
+    if "--version" in sys.argv:
+        print(pkg_version("reka-mcp"))
+        return
+
     config = load_config()
     server = create_server(
         api_url=config.api_url,

@@ -84,6 +84,20 @@ Add to `.cursor/mcp.json`:
 claude mcp add reka-mcp -e REKA_VISION_API_KEY=your-api-key-here -- uvx reka-mcp
 ```
 
+## Updating
+
+To update to the latest version, clear the cached package and restart your client:
+
+```bash
+uv cache clean reka-mcp
+```
+
+To check which version you're running:
+
+```bash
+uvx reka-mcp --version
+```
+
 ## Available Tools
 
 | Tool | Description |
