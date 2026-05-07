@@ -7,6 +7,7 @@ import asyncio
 import contextvars
 import logging
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
@@ -104,6 +105,29 @@ class RekaClient:
         if group_id is not None:
             data["group_id"] = group_id
         return VideoUploadResponse.model_validate(await self._post_form("/v2/videos", data))
+
+    async def upload_video_file(
+        self,
+        *,
+        file_path: str,
+        name: str | None = None,
+        description: str | None = None,
+        group_id: str | None = None,
+    ) -> VideoUploadResponse:
+        path = Path(file_path)
+        if not path.is_file():
+            raise FileNotFoundError(f"File does not exist: {file_path}")
+        data: dict[str, str] = {}
+        if name is not None:
+            data["video_name"] = name
+        if description is not None:
+            data["description"] = description
+        if group_id is not None:
+            data["group_id"] = group_id
+        files = {"file": (path.name, path.read_bytes(), "application/octet-stream")}
+        return VideoUploadResponse.model_validate(
+            await self._request("POST", "/v2/videos", data=data, files=files)
+        )
 
     async def list_videos(self, *, video_ids: list[str] | None = None) -> list[VideoResponse]:
         params: JsonDict = {}
@@ -358,6 +382,7 @@ class RekaClient:
         params: JsonDict | None = None,
         json: JsonDict | None = None,
         data: dict[str, str] | None = None,
+        files: dict[str, tuple[str, bytes, str]] | None = None,
     ) -> JsonDict:
         headers: dict[str, str] = {}
         api_key = reka_api_key_var.get() or self._api_key
@@ -380,6 +405,7 @@ class RekaClient:
                 params=params,
                 json=json,
                 data=data,
+                files=files,
                 headers=headers,
             )
             elapsed_ms = (time.monotonic() - t0) * 1000

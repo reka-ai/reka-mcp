@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import pathlib
 from unittest.mock import AsyncMock, patch
 
 import httpx
@@ -849,4 +850,143 @@ class TestApiError:
             await mcp_server.call_tool(
                 "index_video",
                 {"video_id": "vid-1", "pipeline": "search_only"},
+            )
+
+
+class TestFileUpload:
+    """index_video accepts file_path to upload + index in one call."""
+
+    async def test_file_path_uploads_and_indexes(
+        self, client: RekaClient, mcp_server: FastMCP, tmp_path: pathlib.Path
+    ) -> None:
+        video_file = tmp_path / "clip.mp4"
+        video_file.write_bytes(b"fake-video-content")
+
+        upload_call_count = 0
+        get_call_count = 0
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            nonlocal upload_call_count, get_call_count
+            url = str(req.url)
+
+            # Upload endpoint — multipart with file
+            if url.endswith("/v2/videos") and req.method == "POST":
+                upload_call_count += 1
+                return httpx.Response(202, json={"video_id": "vid-new", "status": "uploading"})
+
+            # Poll for upload completion
+            if url.endswith("/v2/videos/vid-new") and req.method == "GET":
+                get_call_count += 1
+                if get_call_count < 2:
+                    return httpx.Response(200, json={"video_id": "vid-new", "status": "uploading"})
+                return httpx.Response(200, json={"video_id": "vid-new", "status": "uploaded"})
+
+            # Feature plan — already ready
+            if "features/plan" in url:
+                return httpx.Response(
+                    200,
+                    json=_plan_response(
+                        done=True,
+                        statuses={
+                            "transcript": "ready",
+                            "captions": "ready",
+                            "embeddings": "ready",
+                        },
+                    ),
+                )
+
+            return httpx.Response(404, json={"error": {"message": "not found"}})
+
+        mock_client(client, handler)
+
+        with patch("reka_mcp.tools.indexing.asyncio.sleep", new_callable=AsyncMock):
+            result = await mcp_server.call_tool(
+                "index_video",
+                {"file_path": str(video_file), "pipeline": "search_only"},
+            )
+
+        body = json.loads(tool_result_text(result))
+        assert body["video_id"] == "vid-new"
+        assert body["status"] == "ready"
+        assert upload_call_count == 1
+        assert get_call_count >= 2
+
+    async def test_file_path_sends_file_content(
+        self, client: RekaClient, mcp_server: FastMCP, tmp_path: pathlib.Path
+    ) -> None:
+        video_file = tmp_path / "clip.mp4"
+        video_file.write_bytes(b"fake-video-bytes")
+
+        received_content: bytes | None = None
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            nonlocal received_content
+            url = str(req.url)
+
+            if url.endswith("/v2/videos") and req.method == "POST":
+                received_content = req.content
+                return httpx.Response(202, json={"video_id": "vid-new", "status": "uploaded"})
+
+            if url.endswith("/v2/videos/vid-new") and req.method == "GET":
+                return httpx.Response(200, json={"video_id": "vid-new", "status": "uploaded"})
+
+            if "features/plan" in url:
+                return httpx.Response(
+                    200,
+                    json=_plan_response(
+                        done=True,
+                        statuses={
+                            "transcript": "ready",
+                            "captions": "ready",
+                            "embeddings": "ready",
+                        },
+                    ),
+                )
+
+            return httpx.Response(404, json={"error": {"message": "not found"}})
+
+        mock_client(client, handler)
+
+        with patch("reka_mcp.tools.indexing.asyncio.sleep", new_callable=AsyncMock):
+            await mcp_server.call_tool(
+                "index_video",
+                {"file_path": str(video_file), "pipeline": "search_only"},
+            )
+
+        assert received_content is not None
+        assert b"fake-video-bytes" in received_content
+        assert b"clip.mp4" in received_content
+
+    async def test_requires_video_id_or_file_path(
+        self, client: RekaClient, mcp_server: FastMCP
+    ) -> None:
+        with pytest.raises(ToolError, match=r"(?i)video_id.*file_path|file_path.*video_id"):
+            await mcp_server.call_tool(
+                "index_video",
+                {"pipeline": "search_only"},
+            )
+
+    async def test_rejects_both_video_id_and_file_path(
+        self, client: RekaClient, mcp_server: FastMCP, tmp_path: pathlib.Path
+    ) -> None:
+        video_file = tmp_path / "clip.mp4"
+        video_file.write_bytes(b"fake")
+
+        with pytest.raises(ToolError, match=r"(?i)not both"):
+            await mcp_server.call_tool(
+                "index_video",
+                {
+                    "video_id": "vid-1",
+                    "file_path": str(video_file),
+                    "pipeline": "search_only",
+                },
+            )
+
+    async def test_nonexistent_file_raises_error(
+        self, client: RekaClient, mcp_server: FastMCP
+    ) -> None:
+        with pytest.raises(ToolError, match=r"(?i)not found|does not exist|no such file"):
+            await mcp_server.call_tool(
+                "index_video",
+                {"file_path": "/nonexistent/video.mp4", "pipeline": "search_only"},
             )

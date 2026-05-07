@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from mcp.server.fastmcp.exceptions import ToolError
@@ -31,6 +32,12 @@ def register_indexing_tools(
     poll_interval: int = 5,
     mode: RuntimeMode = "local",
 ) -> None:
+    file_upload_note = (
+        "\n\nAccepts either video_id (for an already-uploaded video) or "
+        "file_path (a local file to upload and index in one step). "
+        "Provide exactly one."
+    )
+
     if mode == "hosted":
         description = (
             "Trigger indexing for search, QA, or full analysis. Hosted "
@@ -43,8 +50,8 @@ def register_indexing_tools(
             "- search_only: transcription + captions + embeddings (enables search_videos)\n"
             "- qa_only: transcription + captions (enables ask_video)\n"
             "- full: all features including object detection (enables all tools)\n\n"
-            "Prerequisites: video must be in 'uploaded' status (upload complete). "
-            "Use get_video to check status before calling this tool."
+            "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
+            "Use get_video to check status before calling this tool." + file_upload_note
         )
     else:
         description = (
@@ -55,8 +62,8 @@ def register_indexing_tools(
             "- search_only: transcription + captions + embeddings (enables search_videos)\n"
             "- qa_only: transcription + captions (enables ask_video)\n"
             "- full: all features including object detection (enables all tools)\n\n"
-            "Prerequisites: video must be in 'uploaded' status (upload complete). "
-            "Use get_video to check status before calling this tool."
+            "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
+            "Use get_video to check status before calling this tool." + file_upload_note
         )
 
     @server.tool(
@@ -67,15 +74,51 @@ def register_indexing_tools(
     @with_request_context
     @logged
     async def index_video(
-        video_id: str,
+        video_id: str | None = None,
+        file_path: str | None = None,
         pipeline: Pipeline = "search_only",
         rationale: str | None = None,
     ) -> str:
+        if video_id and file_path:
+            raise ToolError("Provide video_id or file_path, not both.")
+        if not video_id and not file_path:
+            raise ToolError("Provide either video_id or file_path.")
+
+        if file_path:
+            video_id = await _upload_and_wait(client, file_path, poll_interval, index_timeout)
+
+        assert video_id is not None
+
         if mode == "hosted":
             result = await _trigger_indexing(client, video_id, pipeline)
         else:
             result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
         return json.dumps(result)
+
+
+async def _upload_and_wait(
+    client: RekaClient,
+    file_path: str,
+    poll_interval: int,
+    timeout: int,
+) -> str:
+    path = Path(file_path)
+    if not path.is_file():
+        raise ToolError(f"File does not exist: {file_path}")
+
+    upload_resp = await client.upload_video_file(file_path=file_path)
+    video_id = upload_resp.video_id
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        video = await client.get_video(video_id)
+        if video.status == "uploaded":
+            return video_id
+        if video.status not in ("uploading", "pending"):
+            raise ToolError(f"Upload failed for video {video_id}: status is '{video.status}'.")
+        await asyncio.sleep(poll_interval)
+
+    raise ToolError(f"Upload timed out for video {video_id} after {timeout}s.")
 
 
 async def _trigger_indexing(
