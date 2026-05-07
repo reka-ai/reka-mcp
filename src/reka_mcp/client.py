@@ -26,8 +26,18 @@ from reka_mcp.pipelines import Feature
 
 logger = logging.getLogger(__name__)
 
+# Note: the contextvars here store a value per async execution context
+# Each MCP request runs its own async execution context, so there is no collision
+# when using these contextvars.
+# contextvars propagate into child async tasks created from the current context - this
+# is the desired behavior for downstream asyncio.gather(...) inside a tool, because those
+# API calls should use the same request key. It would only be risky if we spawned long-lived
+# background tasks that outlive the request. Current hosted mode does not do that.
 mcp_session_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "mcp_session_id", default=None
+)
+reka_api_key_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "reka_api_key", default=None
 )
 
 JsonDict = dict[str, Any]
@@ -66,10 +76,10 @@ class RekaClient:
     _MAX_RETRIES = 3
     _retry_base_delay: float = 1.0
 
-    def __init__(self, api_url: str, api_key: str) -> None:
+    def __init__(self, api_url: str, api_key: str | None) -> None:
+        self._api_key = api_key
         self._http = httpx.AsyncClient(
             base_url=api_url.rstrip("/"),
-            headers={"x-api-key": api_key},
             timeout=60.0,
         )
 
@@ -370,6 +380,13 @@ class RekaClient:
         files: dict[str, tuple[str, bytes, str]] | None = None,
     ) -> JsonDict:
         headers: dict[str, str] = {}
+        api_key = reka_api_key_var.get() or self._api_key
+        if not api_key:
+            raise AuthError(
+                "Missing Reka API key. Provide X-Reka-API-Key for hosted MCP requests."
+            )
+        headers["x-api-key"] = api_key
+
         session_id = mcp_session_id_var.get()
         if session_id:
             headers["x-mcp-session-id"] = session_id

@@ -13,7 +13,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 from reka_mcp.pipelines import PIPELINE_FEATURES, Feature, FeatureStatus, Pipeline
-from reka_mcp.tools import logged
+from reka_mcp.tools import logged, with_request_context
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ def register_indexing_tools(
         ),
         annotations=ToolAnnotations(idempotentHint=True),
     )
+    @with_request_context
     @logged
     async def index_video(
         video_id: str,

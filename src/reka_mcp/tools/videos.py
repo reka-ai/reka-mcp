@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-from reka_mcp.tools import DESTRUCTIVE, READ_ONLY, logged
+from reka_mcp.tools import DESTRUCTIVE, READ_ONLY, logged, with_request_context
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -31,6 +31,7 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=ToolAnnotations(),
     )
+    @with_request_context
     @logged
     async def upload_video(
         video_url: str | None = None,
@@ -81,6 +82,7 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def list_videos(group_id: str | None = None, rationale: str | None = None) -> str:
         if group_id:
@@ -98,6 +100,7 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def get_video(video_id: str, rationale: str | None = None) -> str:
         result = await client.get_video(video_id)
@@ -112,6 +115,7 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=ToolAnnotations(idempotentHint=True),
     )
+    @with_request_context
     @logged
     async def update_video(
         video_id: str,
@@ -140,6 +144,7 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=DESTRUCTIVE,
     )
+    @with_request_context
     @logged
     async def delete_video(video_id: str, rationale: str | None = None) -> str:
         result = await client.delete_video(video_id)

@@ -7,12 +7,7 @@ MCP server that lets AI agents upload, index, search, and analyze videos through
 ## Quick Start
 
 ```bash
-# Run the published stdio server
-uvx reka-mcp
-```
-
-```bash
-# Run with an API key
+# Run the published local stdio server with your Reka API key
 REKA_VISION_API_KEY="your-api-key" uvx reka-mcp
 ```
 
@@ -36,10 +31,61 @@ uv run pre-commit install
 REKA_VISION_API_KEY="test-key" uv run reka-mcp
 ```
 
-The stdio transport is the default. Use HTTP only when hosting the MCP server:
+The default mode is local stdio. In local mode, `REKA_VISION_API_KEY` is read once
+from the process environment and used for all requests.
+
+## Hosted Mode
+
+Hosted mode runs the same MCP tools over Streamable HTTP. It does not use a
+process-wide Reka API key. Instead, each MCP HTTP request must include the user's
+key in `X-Reka-API-Key`; the server forwards that value to the Reka Vision API as
+`x-api-key` for that request only.
+
+Production-style hosted startup:
 
 ```bash
-REKA_MCP_TRANSPORT=http REKA_MCP_AUTH_TOKEN="your-secret" uv run python -m reka_mcp
+REKA_MCP_MODE=hosted \
+REKA_MCP_HTTP_HOST=0.0.0.0 \
+PORT=8080 \
+uv run reka-mcp
+```
+
+Endpoints:
+
+- MCP Streamable HTTP: `http://<host>:<port>/mcp`
+- Health check: `http://<host>:<port>/health`
+
+Hosted clients must send:
+
+```http
+X-Reka-API-Key: your-api-key
+```
+
+`REKA_MCP_AUTH_TOKEN` is optional MCP transport auth. When set, HTTP clients must
+also send `Authorization: Bearer <token>`.
+
+### Run Hosted Mode Locally
+
+Hosted mode enables DNS rebinding protection. Its default allowed hosts and
+origins are production/staging domains, so override them for localhost testing:
+
+```bash
+REKA_MCP_MODE=hosted \
+REKA_MCP_TRANSPORT=http \
+REKA_MCP_HTTP_HOST=0.0.0.0 \
+REKA_MCP_HTTP_PORT=8080 \
+PORT=8080 \
+REKA_MCP_HTTP_PATH=/mcp \
+REKA_MCP_ALLOWED_HOSTS="localhost:*,127.0.0.1:*" \
+REKA_MCP_ALLOWED_ORIGINS="http://localhost:*,http://127.0.0.1:*" \
+uv run reka-mcp
+```
+
+Then connect to `http://localhost:8080/mcp` and configure your MCP client or
+inspector to send `X-Reka-API-Key`. Check the server with:
+
+```bash
+curl -H "Host: localhost:8080" http://localhost:8080/health
 ```
 
 ## Claude Desktop Setup
@@ -116,7 +162,6 @@ uvx reka-mcp --version
 | `get_transcript` | Get transcript as text, segments, or words |
 | `get_captions` | Get AI-generated visual descriptions |
 | `get_scenes` | Get detected scene boundaries |
-| `get_objects` | Get detected objects with bounding boxes |
 | `get_feature_catalog` | List available features and dependencies |
 | `summarize_video` | Compact overview of video content and status |
 
@@ -124,13 +169,18 @@ uvx reka-mcp --version
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `REKA_VISION_API_KEY` | *(required)* | API key from https://platform.reka.ai |
+| `REKA_MCP_MODE` | `local` | Runtime mode: `local` or `hosted` |
+| `REKA_VISION_API_KEY` | *(required in local mode)* | API key from https://platform.reka.ai. Not used as the primary auth source in hosted mode. |
 | `REKA_VISION_API_URL` | `https://vision-agent.api.reka.ai` | API base URL |
 | `REKA_MCP_INDEX_TIMEOUT` | `600` | Max seconds to wait for indexing |
 | `REKA_MCP_POLL_INTERVAL` | `5` | Seconds between index status polls |
-| `REKA_MCP_TRANSPORT` | `stdio` | Transport: `stdio` or `http` |
-| `REKA_MCP_HTTP_PORT` | `8080` | Port for HTTP transport |
-| `REKA_MCP_AUTH_TOKEN` | *(none)* | Bearer token for HTTP transport auth. Clients must send `Authorization: Bearer <token>`. Recommended when using HTTP transport. |
+| `REKA_MCP_TRANSPORT` | `stdio` in local, `http` in hosted | Transport: `stdio` or `http` |
+| `REKA_MCP_HTTP_HOST` | `127.0.0.1` in local, `0.0.0.0` in hosted | Host for HTTP transport |
+| `REKA_MCP_HTTP_PORT` | `8080` | Port for HTTP transport. In hosted mode, `PORT` takes precedence when set. |
+| `REKA_MCP_HTTP_PATH` | `/mcp` | Streamable HTTP endpoint path |
+| `REKA_MCP_ALLOWED_HOSTS` | `mcp.reka.ai,mcp-staging.reka.ai` in hosted | Comma-separated allowed HTTP Host values for DNS rebinding protection |
+| `REKA_MCP_ALLOWED_ORIGINS` | `https://mcp.reka.ai,https://mcp-staging.reka.ai` in hosted | Comma-separated allowed Origin values |
+| `REKA_MCP_AUTH_TOKEN` | *(none)* | Optional bearer token for HTTP transport auth. Clients must send `Authorization: Bearer <token>` when set. |
 
 ## Release Checks
 

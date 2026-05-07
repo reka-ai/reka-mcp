@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from mcp.types import ToolAnnotations
 
-from reka_mcp.tools import DESTRUCTIVE, READ_ONLY, logged
+from reka_mcp.tools import DESTRUCTIVE, READ_ONLY, logged, with_request_context
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -25,6 +25,7 @@ def register_group_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=ToolAnnotations(),
     )
+    @with_request_context
     @logged
     async def create_group(name: str, rationale: str | None = None) -> str:
         result = await client.create_group(name)
@@ -38,6 +39,7 @@ def register_group_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def list_groups(rationale: str | None = None) -> str:
         groups = await client.list_groups()
@@ -51,6 +53,7 @@ def register_group_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=DESTRUCTIVE,
     )
+    @with_request_context
     @logged
     async def delete_group(group_id: str, rationale: str | None = None) -> str:
         result = await client.delete_group(group_id)

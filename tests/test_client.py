@@ -25,9 +25,19 @@ class TestAuthHeader:
         )
         await client.list_videos()
 
-    async def test_client_sets_auth_header(self) -> None:
+    async def test_client_injects_static_auth_header_per_request(self) -> None:
         c = RekaClient(api_url="http://test.local", api_key="my-secret")
-        assert c._http.headers["x-api-key"] == "my-secret"
+        captured_headers: dict = {}
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            captured_headers.update(req.headers)
+            return httpx.Response(200, json={"results": []})
+
+        mock_client(c, handler)
+        await c.list_videos()
+
+        assert captured_headers["x-api-key"] == "my-secret"
+        assert "x-api-key" not in c._http.headers
 
 
 class TestMcpSessionIdHeader:

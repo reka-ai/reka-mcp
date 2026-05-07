@@ -27,7 +27,6 @@ def mock_client(
     client._http = httpx.AsyncClient(
         transport=transport,
         base_url=BASE_URL,
-        headers={"x-api-key": "test-key"},
     )
 
 

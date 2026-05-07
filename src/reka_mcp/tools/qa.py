@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, NotRequired, TypedDict
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-from reka_mcp.tools import logged
+from reka_mcp.tools import logged, with_request_context
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -80,6 +80,7 @@ def register_qa_tools(
         ),
         annotations=ToolAnnotations(readOnlyHint=True),
     )
+    @with_request_context
     @logged
     async def ask_video(
         question: str,

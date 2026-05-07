@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from reka_mcp.tools import READ_ONLY, logged
+from reka_mcp.tools import READ_ONLY, logged, with_request_context
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -43,6 +43,7 @@ def register_segment_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def segment_video(
         video_id: str,

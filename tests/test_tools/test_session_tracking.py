@@ -10,8 +10,8 @@ import httpx
 import pytest
 from mcp.server.fastmcp import FastMCP
 
-from reka_mcp.client import RekaClient, mcp_session_id_var
-from reka_mcp.tools import _extract_mcp_session_id
+from reka_mcp.client import RekaClient, mcp_session_id_var, reka_api_key_var
+from reka_mcp.tools import _extract_mcp_session_id, with_request_context
 from reka_mcp.tools.search import register_search_tools
 from tests.conftest import mock_client
 
@@ -78,7 +78,7 @@ class TestExtractMcpSessionId:
 
 
 class TestSessionIdPropagation:
-    """End-to-end: MCP request context → @logged → contextvar → API header."""
+    """End-to-end: MCP request context → @with_request_context → API header."""
 
     @pytest.fixture
     def mcp_server(self, client: RekaClient) -> FastMCP:
@@ -172,3 +172,39 @@ class TestSessionIdPropagation:
             request_ctx.reset(token)
 
         assert mcp_session_id_var.get() is None
+
+
+class TestRequestContextDecorator:
+    async def test_sets_and_resets_session_and_reka_api_key(self) -> None:
+        from mcp.server.lowlevel.server import request_ctx
+        from mcp.shared.context import RequestContext
+
+        seen: dict[str, str | None] = {}
+
+        @with_request_context
+        async def handler() -> str:
+            seen["session_id"] = mcp_session_id_var.get()
+            seen["api_key"] = reka_api_key_var.get()
+            return "ok"
+
+        ctx = RequestContext(
+            request_id="req-1",
+            meta=None,
+            session=MagicMock(),
+            lifespan_context=None,
+            request=FakeRequest(
+                headers={
+                    "mcp-session-id": "sess-context",
+                    "x-reka-api-key": "rk-context",
+                }
+            ),
+        )
+        token = request_ctx.set(ctx)
+        try:
+            assert await handler() == "ok"
+        finally:
+            request_ctx.reset(token)
+
+        assert seen == {"session_id": "sess-context", "api_key": "rk-context"}
+        assert mcp_session_id_var.get() is None
+        assert reka_api_key_var.get() is None

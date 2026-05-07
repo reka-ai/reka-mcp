@@ -8,7 +8,7 @@ import json
 from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict
 
 from reka_mcp.pipelines import FeatureStatus
-from reka_mcp.tools import READ_ONLY, logged
+from reka_mcp.tools import READ_ONLY, logged, with_request_context
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -57,6 +57,7 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def get_transcript(
         video_id: str,
@@ -91,6 +92,7 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def get_captions(
         video_id: str,
@@ -121,6 +123,7 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def get_scenes(video_id: str, rationale: str | None = None) -> str:
         data = await client.get_scenes(video_id)
@@ -141,6 +144,7 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def get_feature_catalog(rationale: str | None = None) -> str:
         catalog = await client.get_feature_catalog()
@@ -157,6 +161,7 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
         ),
         annotations=READ_ONLY,
     )
+    @with_request_context
     @logged
     async def summarize_video(video_id: str, rationale: str | None = None) -> str:
         return json.dumps(await _build_summary(client, video_id))
