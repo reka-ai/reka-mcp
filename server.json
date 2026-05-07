@@ -4,6 +4,20 @@
   "title": "Reka",
   "description": "Understand your videos with Reka AI — search, ask questions, and extract insights.",
   "version": "0.1.6",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.reka.ai/mcp",
+      "headers": [
+        {
+          "name": "X-Reka-API-Key",
+          "description": "Your Reka API key",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ],
   "packages": [
     {
       "registryType": "pypi",
