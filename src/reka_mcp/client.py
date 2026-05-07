@@ -105,25 +105,6 @@ class RekaClient:
             data["group_id"] = group_id
         return VideoUploadResponse.model_validate(await self._post_form("/v2/videos", data))
 
-    async def upload_file(
-        self,
-        *,
-        file_content: bytes,
-        filename: str,
-        name: str,
-        description: str | None = None,
-        group_id: str | None = None,
-    ) -> VideoUploadResponse:
-        data: dict[str, str] = {"video_name": name}
-        if description is not None:
-            data["description"] = description
-        if group_id is not None:
-            data["group_id"] = group_id
-        files = {"file": (filename, file_content, "application/octet-stream")}
-        return VideoUploadResponse.model_validate(
-            await self._request("POST", "/v2/videos", data=data, files=files)
-        )
-
     async def list_videos(self, *, video_ids: list[str] | None = None) -> list[VideoResponse]:
         params: JsonDict = {}
         if video_ids:
@@ -377,7 +358,6 @@ class RekaClient:
         params: JsonDict | None = None,
         json: JsonDict | None = None,
         data: dict[str, str] | None = None,
-        files: dict[str, tuple[str, bytes, str]] | None = None,
     ) -> JsonDict:
         headers: dict[str, str] = {}
         api_key = reka_api_key_var.get() or self._api_key
@@ -400,7 +380,6 @@ class RekaClient:
                 params=params,
                 json=json,
                 data=data,
-                files=files,
                 headers=headers,
             )
             elapsed_ms = (time.monotonic() - t0) * 1000

@@ -77,6 +77,14 @@ class TestWorkflowGuideResource:
         assert "second" in text.lower()
         assert "more API calls" in text or "more expensive" in text or "cost" in text.lower()
 
+    async def test_covers_upload_index_polling_workflow(self, mcp_server: FastMCP) -> None:
+        contents = await mcp_server.read_resource("reka://docs/guide")
+        text = contents[0].content
+        assert "upload_video" in text
+        assert "index_video" in text
+        assert "poll get_video" in text
+        assert "features" in text
+
 
 class TestVideoResource:
     async def test_listed_in_templates(self, mcp_server: FastMCP) -> None:

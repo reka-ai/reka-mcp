@@ -3,9 +3,7 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from mcp.server.fastmcp.exceptions import ToolError
@@ -23,48 +21,35 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
     @server.tool(
         name="upload_video",
         description=(
-            "Upload a video from a URL or local file path. Returns a video_id. "
-            "Provide exactly one of video_url or file_path. For file uploads, "
-            "name is required. The upload runs asynchronously — poll get_video "
-            "until status is 'uploaded', then call index_video to enable search "
-            "and analysis."
+            "Upload a video from a URL. Returns a video_id. Local file paths "
+            "are not accepted; upload files outside the MCP server and pass a "
+            "reachable video_url. The upload runs asynchronously — poll "
+            "get_video until status is 'uploaded', then call index_video to "
+            "enable search and analysis."
         ),
         annotations=ToolAnnotations(),
     )
     @with_request_context
     @logged
     async def upload_video(
-        video_url: str | None = None,
-        file_path: str | None = None,
+        video_url: str,
         name: str | None = None,
         description: str | None = None,
         group_id: str | None = None,
         rationale: str | None = None,
     ) -> str:
-        if bool(video_url) == bool(file_path):
-            raise ToolError("Exactly one of 'video_url' or 'file_path' must be provided.")
+        if not video_url:
+            raise ToolError(
+                "'video_url' is required. Local file paths are not accepted; "
+                "upload files outside the MCP server and pass a reachable URL."
+            )
 
-        if file_path:
-            path = Path(file_path)
-            if not path.is_file():
-                raise ToolError(f"File not found: {file_path}")
-            if not name:
-                raise ToolError("'name' is required for file uploads.")
-            content = await asyncio.to_thread(path.read_bytes)
-            result = await client.upload_file(
-                file_content=content,
-                filename=path.name,
-                name=name,
-                description=description,
-                group_id=group_id,
-            )
-        else:
-            result = await client.upload_video(
-                video_url=video_url,  # type: ignore[arg-type]
-                name=name,
-                description=description,
-                group_id=group_id,
-            )
+        result = await client.upload_video(
+            video_url=video_url,
+            name=name,
+            description=description,
+            group_id=group_id,
+        )
 
         body = result.model_dump()
         body["hint"] = (

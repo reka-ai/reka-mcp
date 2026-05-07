@@ -1,5 +1,5 @@
 # ABOUTME: Local-mode regression tests that must stay stable while hosted MCP is added.
-# ABOUTME: Covers stdio entrypoint/config, static API keys, file upload, blocking indexing, and tools.
+# ABOUTME: Covers stdio entrypoint/config, static API keys, URL upload, blocking indexing, and tools.
 
 from __future__ import annotations
 
@@ -99,7 +99,7 @@ def test_main_runs_stdio_with_static_reka_api_key(monkeypatch) -> None:
     assert fake_server.settings.port == 9999
 
 
-async def test_local_server_registers_current_tools_and_file_upload_schema() -> None:
+async def test_local_server_registers_current_tools_and_url_only_upload_schema() -> None:
     server = create_server(api_url="http://localhost:8000", api_key="test-key")
     tools = {tool.name: tool for tool in await server.list_tools()}
 
@@ -127,16 +127,14 @@ async def test_local_server_registers_current_tools_and_file_upload_schema() -> 
 
     upload_schema = tools["upload_video"].inputSchema["properties"]
     assert "video_url" in upload_schema
-    assert "file_path" in upload_schema
+    assert "file_path" not in upload_schema
 
 
-async def test_local_upload_video_accepts_file_path_and_posts_file_multipart(tmp_path) -> None:
+async def test_local_upload_video_accepts_url_and_sends_static_api_key() -> None:
     client = RekaClient(api_url=BASE_URL, api_key="local-static-key")
     server = FastMCP("test-reka-vision")
     register_video_tools(server, client)
 
-    video_file = tmp_path / "clip.mp4"
-    video_file.write_bytes(b"local video bytes")
     captured: dict[str, bytes | str] = {}
 
     def handler(req: httpx.Request) -> httpx.Response:
@@ -153,20 +151,18 @@ async def test_local_upload_video_accepts_file_path_and_posts_file_multipart(tmp
 
     result = await server.call_tool(
         "upload_video",
-        {"file_path": str(video_file), "name": "Local Clip"},
+        {"video_url": "https://example.com/clip.mp4", "name": "Local Clip"},
     )
 
     body = json.loads(tool_result_text(result))
-    multipart_body = captured["body"]
-    assert isinstance(multipart_body, bytes)
+    form_body = captured["body"]
+    assert isinstance(form_body, bytes)
     assert body["video_id"] == "vid-file"
     assert captured["method"] == "POST"
     assert captured["api_key"] == "local-static-key"
-    assert "multipart/form-data" in str(captured["content_type"])
-    assert b"local video bytes" in multipart_body
-    assert b'filename="clip.mp4"' in multipart_body
-    assert b"video_name" in multipart_body
-    assert b"Local Clip" in multipart_body
+    assert "application/x-www-form-urlencoded" in str(captured["content_type"])
+    assert b"video_url=https" in form_body
+    assert b"video_name=Local+Clip" in form_body
 
 
 async def test_local_index_video_blocks_and_polls_until_ready(client: RekaClient) -> None:

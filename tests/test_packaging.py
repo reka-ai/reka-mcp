@@ -53,6 +53,8 @@ def test_readme_has_registry_marker_and_local_install_docs() -> None:
     assert 'REKA_VISION_API_KEY": "your-api-key-here"' in readme
     assert "uv sync" in readme
     assert 'REKA_VISION_API_KEY="test-key" uv run reka-mcp' in readme
+    assert "Hosted indexing is non-blocking" in readme
+    assert "poll get_video" in readme
 
 
 def test_server_json_matches_project_and_readme_registry_metadata() -> None:

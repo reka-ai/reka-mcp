@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import httpx
 import pytest
@@ -68,61 +67,18 @@ class TestUploadVideo:
         assert "hint" in body
         assert "index_video" in body["hint"]
 
+    async def test_upload_schema_does_not_accept_file_path(self, mcp_server: FastMCP) -> None:
+        tools = {tool.name: tool for tool in await mcp_server.list_tools()}
+        upload_schema = tools["upload_video"].inputSchema["properties"]
+        assert "video_url" in upload_schema
+        assert "file_path" not in upload_schema
 
-class TestUploadVideoFromFile:
-    async def test_upload_from_file_path(
-        self, client: RekaClient, mcp_server: FastMCP, tmp_path: Any
-    ) -> None:
-        video_file = tmp_path / "clip.mp4"
-        video_file.write_bytes(b"fake video content")
-
-        mock_client(
-            client,
-            lambda req: httpx.Response(202, json={"video_id": "vid-file", "status": "uploading"}),
-        )
-        result = await mcp_server.call_tool(
-            "upload_video",
-            {"file_path": str(video_file), "name": "my clip"},
-        )
-        body = json.loads(tool_result_text(result))
-        assert body["video_id"] == "vid-file"
-        assert "hint" in body
-
-    async def test_upload_file_requires_name(
-        self, client: RekaClient, mcp_server: FastMCP, tmp_path: Any
-    ) -> None:
-        video_file = tmp_path / "clip.mp4"
-        video_file.write_bytes(b"data")
-
-        with pytest.raises(ToolError, match=r"(?i)name.*required"):
-            await mcp_server.call_tool(
-                "upload_video",
-                {"file_path": str(video_file)},
-            )
-
-    async def test_upload_rejects_both_url_and_file(
-        self, client: RekaClient, mcp_server: FastMCP, tmp_path: Any
-    ) -> None:
-        video_file = tmp_path / "clip.mp4"
-        video_file.write_bytes(b"data")
-
-        with pytest.raises(ToolError, match=r"(?i)exactly one"):
-            await mcp_server.call_tool(
-                "upload_video",
-                {
-                    "video_url": "https://example.com/v.mp4",
-                    "file_path": str(video_file),
-                },
-            )
-
-    async def test_upload_rejects_neither_url_nor_file(
-        self, client: RekaClient, mcp_server: FastMCP
-    ) -> None:
-        with pytest.raises(ToolError, match=r"(?i)exactly one"):
+    async def test_upload_requires_video_url(self, mcp_server: FastMCP) -> None:
+        with pytest.raises(ToolError, match=r"(?i)video_url"):
             await mcp_server.call_tool("upload_video", {})
 
-    async def test_upload_file_not_found(self, client: RekaClient, mcp_server: FastMCP) -> None:
-        with pytest.raises(ToolError, match=r"(?i)not found|no such file"):
+    async def test_upload_with_only_file_path_is_rejected(self, mcp_server: FastMCP) -> None:
+        with pytest.raises(ToolError, match=r"(?i)video_url|file_path"):
             await mcp_server.call_tool(
                 "upload_video",
                 {"file_path": "/nonexistent/video.mp4", "name": "test"},

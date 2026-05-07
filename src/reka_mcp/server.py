@@ -99,6 +99,7 @@ def create_server(
         client,
         index_timeout=index_timeout,
         poll_interval=poll_interval,
+        mode=mode,
     )
     register_search_tools(server, client)
     register_qa_tools(server, client)

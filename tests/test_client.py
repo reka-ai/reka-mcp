@@ -246,43 +246,6 @@ class TestVideoMethods:
         assert result.status == "success"
 
 
-class TestUploadFile:
-    async def test_upload_file_posts_multipart(self, client: RekaClient) -> None:
-        def handler(req: httpx.Request) -> httpx.Response:
-            assert req.method == "POST"
-            assert str(req.url).endswith("/v2/videos")
-            content_type = req.headers.get("content-type", "")
-            assert "multipart/form-data" in content_type
-            body = req.content.decode("utf-8", errors="replace")
-            assert b"fake video bytes" in req.content
-            assert "video_name" in body
-            return httpx.Response(202, json={"video_id": "vid-file", "status": "uploading"})
-
-        mock_client(client, handler)
-        result = await client.upload_file(
-            file_content=b"fake video bytes",
-            filename="clip.mp4",
-            name="my clip",
-        )
-        assert result.video_id == "vid-file"
-
-    async def test_upload_file_sends_optional_fields(self, client: RekaClient) -> None:
-        def handler(req: httpx.Request) -> httpx.Response:
-            body = req.content.decode("utf-8", errors="replace")
-            assert "description" in body
-            assert "group_id" in body
-            return httpx.Response(202, json={"video_id": "vid-2", "status": "uploading"})
-
-        mock_client(client, handler)
-        await client.upload_file(
-            file_content=b"data",
-            filename="v.mp4",
-            name="n",
-            description="d",
-            group_id="g1",
-        )
-
-
 class TestGroupMethods:
     async def test_create_group(self, client: RekaClient) -> None:
         def handler(req: httpx.Request) -> httpx.Response:

@@ -18,6 +18,20 @@ WORKFLOW_GUIDE = """\
 Choose the right tools for your question instead of sending everything \
 to ask_video. ask_video works best on short, focused segments.
 
+## Uploading and indexing
+1. upload_video with a reachable video_url. Local file paths are not accepted \
+by the MCP server; upload files outside MCP first and pass the resulting URL.
+2. poll get_video until the video status is "uploaded".
+3. index_video with the pipeline you need.
+4. poll get_video until the requested features are "ready":
+   - search_only needs transcript, captions, and embeddings
+   - qa_only needs transcript and captions
+   - full needs transcript, captions, embeddings, and objects
+
+Hosted index_video returns quickly after triggering work, so polling get_video \
+is part of the normal workflow. Local stdio index_video may wait until indexing \
+is ready, but checking get_video is still safe.
+
 ## Detecting or locating objects
 Pick the path that matches what you know:
 - If you don't know WHEN: search_videos → take top timestamps → \
