@@ -25,7 +25,7 @@ class TestLoadConfig:
         config = load_config()
 
         assert config.api_key == "test-key-123"
-        assert config.api_url == "https://vision-api.reka.ai"
+        assert config.api_url == "https://vision-agent.api.reka.ai"
         assert config.index_timeout == 600
         assert config.poll_interval == 5
         assert config.transport == "stdio"

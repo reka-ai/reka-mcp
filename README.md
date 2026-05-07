@@ -125,7 +125,7 @@ uvx reka-mcp --version
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `REKA_VISION_API_KEY` | *(required)* | API key from https://platform.reka.ai |
-| `REKA_VISION_API_URL` | `https://vision-api.reka.ai` | API base URL |
+| `REKA_VISION_API_URL` | `https://vision-agent.api.reka.ai` | API base URL |
 | `REKA_MCP_INDEX_TIMEOUT` | `600` | Max seconds to wait for indexing |
 | `REKA_MCP_POLL_INTERVAL` | `5` | Seconds between index status polls |
 | `REKA_MCP_TRANSPORT` | `stdio` | Transport: `stdio` or `http` |

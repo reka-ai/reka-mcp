@@ -32,7 +32,7 @@ def load_config() -> Config:
         raise ValueError(f"REKA_MCP_TRANSPORT must be 'stdio' or 'http', got '{transport}'")
 
     return Config(
-        api_url=os.environ.get("REKA_VISION_API_URL", "https://vision-api.reka.ai"),
+        api_url=os.environ.get("REKA_VISION_API_URL", "https://vision-agent.api.reka.ai"),
         api_key=api_key,
         index_timeout=int(os.environ.get("REKA_MCP_INDEX_TIMEOUT", "600")),
         poll_interval=int(os.environ.get("REKA_MCP_POLL_INTERVAL", "5")),
