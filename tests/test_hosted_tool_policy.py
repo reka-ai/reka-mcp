@@ -1,5 +1,5 @@
 # ABOUTME: Hosted tool-policy tests for mode-specific upload and indexing behavior.
-# ABOUTME: Locks hosted MCP to URL-only uploads and non-blocking indexing.
+# ABOUTME: Locks hosted MCP to URL-only uploads.
 
 from __future__ import annotations
 
@@ -51,17 +51,16 @@ class TestHostedUploadPolicy:
 
 
 class TestHostedIndexingPolicy:
-    async def test_hosted_index_video_description_tells_agent_to_poll_get_video(self) -> None:
+    async def test_hosted_index_video_description_mentions_pipelines(self) -> None:
         server = _hosted_server()
 
         tools = {tool.name: tool for tool in await server.list_tools()}
         description = tools["index_video"].description or ""
 
-        assert "returns quickly" in description
-        assert "poll get_video" in description
+        assert "pipeline" in description.lower()
         assert "features" in description
 
-    async def test_hosted_index_video_triggers_and_returns_without_polling(
+    async def test_hosted_index_video_polls_until_ready(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         class FakeClient:
@@ -118,7 +117,7 @@ class TestHostedIndexingPolicy:
         )
         server = _hosted_server()
 
-        with patch("reka_mcp.tools.indexing.asyncio.sleep", new_callable=AsyncMock) as sleep_mock:
+        with patch("reka_mcp.tools.indexing.asyncio.sleep", new_callable=AsyncMock):
             result = await server.call_tool(
                 "index_video",
                 {"video_id": "vid-hosted", "pipeline": "search_only"},
@@ -126,8 +125,6 @@ class TestHostedIndexingPolicy:
 
         body = json.loads(tool_result_text(result))
         assert body["video_id"] == "vid-hosted"
-        assert body["status"] in {"processing", "triggered"}
-        assert fake_client.plan_calls == 1
-        assert fake_client.triggered == ["transcript"]
-        sleep_mock.assert_not_awaited()
-        assert "get_video" in body["hint"]
+        assert body["status"] == "ready"
+        assert fake_client.plan_calls == 2
+        assert "transcript" in fake_client.triggered

@@ -64,9 +64,9 @@ X-Reka-API-Key: your-api-key
 `REKA_MCP_AUTH_TOKEN` is optional MCP transport auth. When set, HTTP clients must
 also send `Authorization: Bearer <token>`.
 
-Hosted indexing is non-blocking. After `upload_video`, poll get_video until
-the video status is `uploaded`, call `index_video`, then poll `get_video` until
-the requested features are `ready`.
+`index_video` works the same in both modes: it polls the feature DAG until all
+requested features are ready (or times out). After `upload_video`, poll
+`get_video` until the video status is `uploaded`, then call `index_video`.
 
 ### Run Hosted Mode Locally
 
@@ -160,7 +160,7 @@ uvx reka-mcp --version
 | `create_group` | Create a new video group |
 | `list_groups` | List all video groups |
 | `delete_group` | Delete a video group |
-| `index_video` | Index a video for search/QA/analysis. Local mode waits; hosted mode returns quickly and clients poll `get_video`. |
+| `index_video` | Index a video for search/QA/analysis. Waits until all requested features are ready (2-10 min). |
 | `search_videos` | Semantic search across indexed videos |
 | `ask_video` | Ask questions about video content with visual analysis |
 | `get_transcript` | Get transcript as text, segments, or words |

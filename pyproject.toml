@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "reka-mcp"
-version = "0.1.5"
+version = "0.1.6"
 description = "Official Reka MCP server for video understanding"
 readme = "README.md"
 license = "Apache-2.0"
