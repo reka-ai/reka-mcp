@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
     from reka_mcp.client import RekaClient
-    from reka_mcp.config import RuntimeMode
 
 
 def register_indexing_tools(
@@ -30,7 +29,6 @@ def register_indexing_tools(
     client: RekaClient,
     index_timeout: int = 600,
     poll_interval: int = 5,
-    mode: RuntimeMode = "local",
 ) -> None:
     file_upload_note = (
         "\n\nAccepts either video_id (for an already-uploaded video) or "
@@ -38,33 +36,17 @@ def register_indexing_tools(
         "Provide exactly one."
     )
 
-    if mode == "hosted":
-        description = (
-            "Trigger indexing for search, QA, or full analysis. Hosted "
-            "indexing returns quickly after starting actionable work; it does "
-            "not wait for all features to become ready. Agents should poll get_video after "
-            "calling this tool and wait until the requested features are "
-            "ready before using search_videos, ask_video, or other indexed "
-            "analysis tools.\n\n"
-            "Pipelines:\n"
-            "- search_only: transcription + captions + embeddings (enables search_videos)\n"
-            "- qa_only: transcription + captions (enables ask_video)\n"
-            "- full: all features including object detection (enables all tools)\n\n"
-            "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
-            "Use get_video to check status before calling this tool." + file_upload_note
-        )
-    else:
-        description = (
-            "Index a video for search, QA, or full analysis. Processes the video "
-            "through a pipeline of AI features. This may take 2-10 minutes "
-            "depending on video length.\n\n"
-            "Pipelines:\n"
-            "- search_only: transcription + captions + embeddings (enables search_videos)\n"
-            "- qa_only: transcription + captions (enables ask_video)\n"
-            "- full: all features including object detection (enables all tools)\n\n"
-            "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
-            "Use get_video to check status before calling this tool." + file_upload_note
-        )
+    description = (
+        "Index a video for search, QA, or full analysis. Processes the video "
+        "through a pipeline of AI features. This may take 2-10 minutes "
+        "depending on video length.\n\n"
+        "Pipelines:\n"
+        "- search_only: transcription + captions + embeddings (enables search_videos)\n"
+        "- qa_only: transcription + captions (enables ask_video)\n"
+        "- full: all features including object detection (enables all tools)\n\n"
+        "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
+        "Use get_video to check status before calling this tool." + file_upload_note
+    )
 
     @server.tool(
         name="index_video",
@@ -89,10 +71,7 @@ def register_indexing_tools(
 
         assert video_id is not None
 
-        if mode == "hosted":
-            result = await _trigger_indexing(client, video_id, pipeline)
-        else:
-            result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
+        result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
         return json.dumps(result)
 
 
@@ -119,66 +98,6 @@ async def _upload_and_wait(
         await asyncio.sleep(poll_interval)
 
     raise ToolError(f"Upload timed out for video {video_id} after {timeout}s.")
-
-
-async def _trigger_indexing(
-    client: RekaClient,
-    video_id: str,
-    pipeline: Pipeline,
-) -> dict[str, str | dict[str, str]]:
-    features = PIPELINE_FEATURES[pipeline]
-
-    video = await client.get_video(video_id)
-    if video.status != "uploaded":
-        raise ToolError(
-            f"Video is in '{video.status}' status. Wait for 'uploaded' status before indexing."
-        )
-
-    desired = sorted(features)
-    plan = await client.plan_features(video_id, desired)
-    feature_statuses: dict[str, str] = {
-        str(f): plan.statuses.get(f, FeatureStatus.NONE) for f in desired
-    }
-
-    if all(s == FeatureStatus.READY for s in feature_statuses.values()):
-        return {
-            "video_id": video_id,
-            "status": "ready",
-            "features": feature_statuses,
-            "hint": (
-                "Video ready. Use search_videos to find moments, "
-                "segment_video to detect specific objects, or ask_video "
-                "with start/end for focused visual analysis."
-            ),
-        }
-
-    failed = [f for f, s in feature_statuses.items() if s == FeatureStatus.FAILED]
-    if failed:
-        return {
-            "video_id": video_id,
-            "status": "failed",
-            "features": feature_statuses,
-            "error": f"Features failed: {', '.join(failed)}",
-        }
-
-    if plan.actionable:
-        await asyncio.gather(
-            *(
-                client.trigger_feature(
-                    video_id,
-                    Feature(feat),
-                    body=_transcript_body(pipeline) if feat == Feature.TRANSCRIPT else None,
-                )
-                for feat in plan.actionable
-            )
-        )
-
-    return {
-        "video_id": video_id,
-        "status": "processing",
-        "features": feature_statuses,
-        "hint": "Indexing triggered. Poll get_video to check progress.",
-    }
 
 
 async def _run_indexing(
