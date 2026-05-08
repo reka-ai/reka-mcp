@@ -76,9 +76,9 @@ class TestHostedConfig:
         assert config.http_port == 8181
         assert config.http_path == "/mcp"
         assert "mcp.reka.ai" in config.allowed_hosts
-        assert "mcp-staging.reka.ai" in config.allowed_hosts
+        assert "staging.mcp.reka.ai" in config.allowed_hosts
         assert "https://mcp.reka.ai" in config.allowed_origins
-        assert "https://mcp-staging.reka.ai" in config.allowed_origins
+        assert "https://staging.mcp.reka.ai" in config.allowed_origins
 
     def test_hosted_main_runs_streamable_http_with_hosted_settings(
         self, monkeypatch: pytest.MonkeyPatch
@@ -108,10 +108,10 @@ class TestHostedConfig:
         monkeypatch.setenv("REKA_MCP_HTTP_HOST", "0.0.0.0")
         monkeypatch.setenv("PORT", "8088")
         monkeypatch.setenv("REKA_MCP_HTTP_PATH", "/mcp")
-        monkeypatch.setenv("REKA_MCP_ALLOWED_HOSTS", "mcp.reka.ai,mcp-staging.reka.ai")
+        monkeypatch.setenv("REKA_MCP_ALLOWED_HOSTS", "mcp.reka.ai,staging.mcp.reka.ai")
         monkeypatch.setenv(
             "REKA_MCP_ALLOWED_ORIGINS",
-            "https://mcp.reka.ai,https://mcp-staging.reka.ai",
+            "https://mcp.reka.ai,https://staging.mcp.reka.ai",
         )
         monkeypatch.setattr(server_module, "create_server", fake_create_server)
 
@@ -123,10 +123,10 @@ class TestHostedConfig:
         assert created_with["http_host"] == "0.0.0.0"
         assert created_with["http_port"] == 8088
         assert created_with["http_path"] == "/mcp"
-        assert created_with["allowed_hosts"] == ("mcp.reka.ai", "mcp-staging.reka.ai")
+        assert created_with["allowed_hosts"] == ("mcp.reka.ai", "staging.mcp.reka.ai")
         assert created_with["allowed_origins"] == (
             "https://mcp.reka.ai",
-            "https://mcp-staging.reka.ai",
+            "https://staging.mcp.reka.ai",
         )
         assert fake_server.run_transports == ["streamable-http"]
 
@@ -140,8 +140,8 @@ class TestHostedHttpServer:
             http_host="0.0.0.0",
             http_port=8080,
             http_path="/mcp",
-            allowed_hosts=("mcp.reka.ai", "mcp-staging.reka.ai"),
-            allowed_origins=("https://mcp.reka.ai", "https://mcp-staging.reka.ai"),
+            allowed_hosts=("mcp.reka.ai", "staging.mcp.reka.ai"),
+            allowed_origins=("https://mcp.reka.ai", "https://staging.mcp.reka.ai"),
         )
 
         assert server.settings.host == "0.0.0.0"
@@ -150,11 +150,11 @@ class TestHostedHttpServer:
         assert server.settings.transport_security is not None
         assert server.settings.transport_security.allowed_hosts == [
             "mcp.reka.ai",
-            "mcp-staging.reka.ai",
+            "staging.mcp.reka.ai",
         ]
         assert server.settings.transport_security.allowed_origins == [
             "https://mcp.reka.ai",
-            "https://mcp-staging.reka.ai",
+            "https://staging.mcp.reka.ai",
         ]
 
         app = server.streamable_http_app()

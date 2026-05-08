@@ -53,8 +53,8 @@ def load_config() -> Config:
     if transport not in ("stdio", "http"):
         raise ValueError(f"REKA_MCP_TRANSPORT must be 'stdio' or 'http', got '{transport}'")
 
-    hosted_allowed_hosts = ("mcp.reka.ai", "mcp-staging.reka.ai")
-    hosted_allowed_origins = ("https://mcp.reka.ai", "https://mcp-staging.reka.ai")
+    hosted_allowed_hosts = ("mcp.reka.ai", "staging.mcp.reka.ai")
+    hosted_allowed_origins = ("https://mcp.reka.ai", "https://staging.mcp.reka.ai")
 
     return Config(
         mode=mode,  # type: ignore[arg-type]

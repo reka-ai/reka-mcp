@@ -182,8 +182,8 @@ uvx reka-mcp --version
 | `REKA_MCP_HTTP_HOST` | `127.0.0.1` in local, `0.0.0.0` in hosted | Host for HTTP transport |
 | `REKA_MCP_HTTP_PORT` | `8080` | Port for HTTP transport. In hosted mode, `PORT` takes precedence when set. |
 | `REKA_MCP_HTTP_PATH` | `/mcp` | Streamable HTTP endpoint path |
-| `REKA_MCP_ALLOWED_HOSTS` | `mcp.reka.ai,mcp-staging.reka.ai` in hosted | Comma-separated allowed HTTP Host values for DNS rebinding protection |
-| `REKA_MCP_ALLOWED_ORIGINS` | `https://mcp.reka.ai,https://mcp-staging.reka.ai` in hosted | Comma-separated allowed Origin values |
+| `REKA_MCP_ALLOWED_HOSTS` | `mcp.reka.ai,staging.mcp.reka.ai` in hosted | Comma-separated allowed HTTP Host values for DNS rebinding protection |
+| `REKA_MCP_ALLOWED_ORIGINS` | `https://mcp.reka.ai,https://staging.mcp.reka.ai` in hosted | Comma-separated allowed Origin values |
 | `REKA_MCP_AUTH_TOKEN` | *(none)* | Optional bearer token for HTTP transport auth. Clients must send `Authorization: Bearer <token>` when set. |
 
 ## Release Checks
