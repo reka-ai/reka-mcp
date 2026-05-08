@@ -50,6 +50,34 @@ class TestHostedUploadPolicy:
             )
 
 
+class TestHostedIndexVideoFilePathRejection:
+    async def test_hosted_index_video_rejects_file_path(self, tmp_path) -> None:
+        server = _hosted_server()
+        video_file = tmp_path / "clip.mp4"
+        video_file.write_bytes(b"should be rejected in hosted mode")
+
+        with pytest.raises(ToolError):
+            await server.call_tool(
+                "index_video",
+                {"file_path": str(video_file), "pipeline": "search_only"},
+            )
+
+    async def test_hosted_index_video_schema_excludes_file_path(self) -> None:
+        server = _hosted_server()
+        tools = {tool.name: tool for tool in await server.list_tools()}
+        index_schema = tools["index_video"].inputSchema["properties"]
+
+        assert "video_id" in index_schema
+        assert "file_path" not in index_schema
+
+    async def test_hosted_index_video_description_omits_file_path(self) -> None:
+        server = _hosted_server()
+        tools = {tool.name: tool for tool in await server.list_tools()}
+        description = tools["index_video"].description or ""
+
+        assert "file_path" not in description
+
+
 class TestHostedIndexingPolicy:
     async def test_hosted_index_video_description_mentions_pipelines(self) -> None:
         server = _hosted_server()

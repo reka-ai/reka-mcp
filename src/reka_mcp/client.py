@@ -137,6 +137,7 @@ class RekaClient:
         return [VideoResponse.model_validate(v) for v in resp["results"]]
 
     async def get_video(self, video_id: str) -> VideoResponse:
+
         return VideoResponse.model_validate(await self._get(f"/v2/videos/{video_id}"))
 
     async def update_video(
@@ -149,6 +150,7 @@ class RekaClient:
         group_id: str | None = None,
         group_id_provided: bool = False,
     ) -> VideoResponse:
+
         body: JsonDict = {}
         if name is not None:
             body["name"] = name
@@ -163,6 +165,7 @@ class RekaClient:
         )
 
     async def delete_video(self, video_id: str) -> DeleteResponse:
+
         return DeleteResponse.model_validate(
             await self._request("DELETE", f"/v2/videos/{video_id}")
         )
@@ -170,6 +173,7 @@ class RekaClient:
     # -- Feature operations --
 
     async def plan_features(self, video_id: str, desired: list[Feature]) -> FeaturePlanResponse:
+
         return FeaturePlanResponse.model_validate(
             await self._post_json(
                 f"/v2/videos/{video_id}/features/plan",
@@ -184,6 +188,7 @@ class RekaClient:
         force: bool = False,
         body: JsonDict | None = None,
     ) -> FeatureTriggerResponse:
+
         feature = Feature(feature)
         request_body: JsonDict = {"force": force}
         if body:
@@ -207,11 +212,13 @@ class RekaClient:
         return [VideoGroupResponse.model_validate(g) for g in resp["results"]]
 
     async def delete_group(self, group_id: str) -> DeleteResponse:
+
         return DeleteResponse.model_validate(
             await self._request("DELETE", f"/v2/video-groups/{group_id}")
         )
 
     async def list_group_videos(self, group_id: str) -> list[VideoResponse]:
+
         resp = await self._get(f"/v2/video-groups/{group_id}/videos")
         return [VideoResponse.model_validate(v) for v in resp["results"]]
 
@@ -254,6 +261,7 @@ class RekaClient:
         end: float | None = None,
         threshold: float | None = None,
     ) -> JsonDict:
+
         body: JsonDict = {
             "prompts": [{"type": "text", "text": p} for p in prompts],
             "start": start,
@@ -277,6 +285,7 @@ class RekaClient:
         end: float | None = None,
         max_items: int | None = None,
     ) -> JsonDict | list[JsonDict]:
+
         params = self._time_range_params(start, end, format=format)
         path = f"/v2/videos/{video_id}/transcript"
         if format == "text":
@@ -292,6 +301,7 @@ class RekaClient:
         end: float | None = None,
         max_items: int | None = None,
     ) -> list[JsonDict]:
+
         data = await self.paginate(
             f"/v2/videos/{video_id}/captions",
             params=self._time_range_params(start, end),
@@ -299,10 +309,12 @@ class RekaClient:
         )
         return data
 
-    async def get_scenes(self, video_id: str) -> list[JsonDict]:
+    async def get_scenes(self, video_id: str, *, max_items: int = 200) -> list[JsonDict]:
+
         data = await self.paginate(
             f"/v2/videos/{video_id}/scenes",
             params=self._time_range_params(),
+            max_items=max_items,
         )
         return data
 
@@ -315,6 +327,7 @@ class RekaClient:
         end: float | None = None,
         max_items: int | None = None,
     ) -> list[JsonDict]:
+
         params = self._time_range_params(start, end)
         if object_type is not None:
             params["type"] = object_type

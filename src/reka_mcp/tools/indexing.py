@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
     from reka_mcp.client import RekaClient
+    from reka_mcp.config import RuntimeMode
 
 
 def register_indexing_tools(
@@ -29,14 +30,9 @@ def register_indexing_tools(
     client: RekaClient,
     index_timeout: int = 600,
     poll_interval: int = 5,
+    mode: RuntimeMode = "local",
 ) -> None:
-    file_upload_note = (
-        "\n\nAccepts either video_id (for an already-uploaded video) or "
-        "file_path (a local file to upload and index in one step). "
-        "Provide exactly one."
-    )
-
-    description = (
+    base_description = (
         "Index a video for search, QA, or full analysis. Processes the video "
         "through a pipeline of AI features. This may take 2-10 minutes "
         "depending on video length.\n\n"
@@ -45,34 +41,57 @@ def register_indexing_tools(
         "- qa_only: transcription + captions (enables ask_video)\n"
         "- full: all features including object detection (enables all tools)\n\n"
         "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
-        "Use get_video to check status before calling this tool." + file_upload_note
+        "Use get_video to check status before calling this tool."
     )
 
-    @server.tool(
-        name="index_video",
-        description=description,
-        annotations=ToolAnnotations(idempotentHint=True),
-    )
-    @with_request_context
-    @logged
-    async def index_video(
-        video_id: str | None = None,
-        file_path: str | None = None,
-        pipeline: Pipeline = "search_only",
-        rationale: str | None = None,
-    ) -> str:
-        if video_id and file_path:
-            raise ToolError("Provide video_id or file_path, not both.")
-        if not video_id and not file_path:
-            raise ToolError("Provide either video_id or file_path.")
+    if mode == "local":
+        description = base_description + (
+            "\n\nAccepts either video_id (for an already-uploaded video) or "
+            "file_path (a local file to upload and index in one step). "
+            "Provide exactly one."
+        )
 
-        if file_path:
-            video_id = await _upload_and_wait(client, file_path, poll_interval, index_timeout)
+        @server.tool(
+            name="index_video",
+            description=description,
+            annotations=ToolAnnotations(idempotentHint=True),
+        )
+        @with_request_context
+        @logged
+        async def index_video(
+            video_id: str | None = None,
+            file_path: str | None = None,
+            pipeline: Pipeline = "search_only",
+            rationale: str | None = None,
+        ) -> str:
+            if video_id and file_path:
+                raise ToolError("Provide video_id or file_path, not both.")
+            if not video_id and not file_path:
+                raise ToolError("Provide either video_id or file_path.")
 
-        assert video_id is not None
+            if file_path:
+                video_id = await _upload_and_wait(client, file_path, poll_interval, index_timeout)
 
-        result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
-        return json.dumps(result)
+            assert video_id is not None
+
+            result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
+            return json.dumps(result)
+    else:
+
+        @server.tool(
+            name="index_video",
+            description=base_description,
+            annotations=ToolAnnotations(idempotentHint=True),
+        )
+        @with_request_context
+        @logged
+        async def index_video_hosted(
+            video_id: str,
+            pipeline: Pipeline = "search_only",
+            rationale: str | None = None,
+        ) -> str:
+            result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
+            return json.dumps(result)
 
 
 async def _upload_and_wait(

@@ -8,9 +8,12 @@ COPY src/ src/
 
 RUN uv pip install --system --no-cache .
 
+RUN adduser --system --no-create-home reka
+
 ENV REKA_MCP_MODE=hosted
-ENV PORT=80
+ENV PORT=8080
 
-EXPOSE 80
+EXPOSE 8080
 
+USER reka
 CMD ["reka-mcp"]

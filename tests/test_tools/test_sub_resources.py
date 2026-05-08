@@ -207,6 +207,29 @@ class TestGetScenes:
         assert body["returned_count"] == 2
         assert body["truncated"] is False
 
+    async def test_caps_at_max_results(self, client: RekaClient, mcp_server: FastMCP) -> None:
+        scenes = [{"index": i, "start": float(i), "end": float(i + 1)} for i in range(600)]
+        mock_client(
+            client,
+            lambda req: httpx.Response(200, json={"data": scenes, "next_page_token": None}),
+        )
+        result = await mcp_server.call_tool("get_scenes", {"video_id": "v1"})
+        body = json.loads(tool_result_text(result))
+        assert body["returned_count"] <= 200
+        assert body["truncated"] is True
+
+    async def test_custom_max_results(self, client: RekaClient, mcp_server: FastMCP) -> None:
+        scenes = [{"index": i, "start": float(i), "end": float(i + 1)} for i in range(20)]
+        mock_client(
+            client,
+            lambda req: httpx.Response(200, json={"data": scenes, "next_page_token": None}),
+        )
+        result = await mcp_server.call_tool("get_scenes", {"video_id": "v1", "max_results": 5})
+        body = json.loads(tool_result_text(result))
+        assert len(body["data"]) == 5
+        assert body["returned_count"] == 5
+        assert body["truncated"] is True
+
 
 class TestGetFeatureCatalog:
     async def test_returns_catalog(self, client: RekaClient, mcp_server: FastMCP) -> None:

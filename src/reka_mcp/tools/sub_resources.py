@@ -43,6 +43,7 @@ class VideoSummary(TypedDict):
 
 MAX_TRANSCRIPT_RESULTS = 500
 MAX_CAPTIONS_RESULTS = 200
+MAX_SCENES_RESULTS = 200
 
 
 def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
@@ -125,15 +126,14 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
     )
     @with_request_context
     @logged
-    async def get_scenes(video_id: str, rationale: str | None = None) -> str:
-        data = await client.get_scenes(video_id)
-        return json.dumps(
-            {
-                "data": data,
-                "returned_count": len(data),
-                "truncated": False,
-            }
-        )
+    async def get_scenes(
+        video_id: str,
+        max_results: int = 200,
+        rationale: str | None = None,
+    ) -> str:
+        max_results = min(max_results, MAX_SCENES_RESULTS)
+        data = await client.get_scenes(video_id, max_items=max_results + 1)
+        return json.dumps(_cap_list(data, max_results))
 
     @server.tool(
         name="get_feature_catalog",
