@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from contextlib import asynccontextmanager
 from importlib.metadata import version as pkg_version
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -12,8 +11,6 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
-
     from starlette.requests import Request
 
 from reka_mcp.auth import StaticTokenVerifier
@@ -46,15 +43,6 @@ def create_server(
 ) -> FastMCP:
     client = RekaClient(api_url=api_url, api_key=api_key)
 
-    @asynccontextmanager
-    async def lifespan(server: FastMCP) -> AsyncIterator[None]:
-        logger.info("server starting, api_url=%s", api_url)
-        try:
-            yield
-        finally:
-            logger.info("server shutting down")
-            await client.close()
-
     kwargs: dict[str, Any] = {}
     if auth_token:
         from mcp.server.auth.settings import AuthSettings
@@ -73,9 +61,10 @@ def create_server(
             allowed_origins=list(allowed_origins),
         )
 
+    # No lifespan: the MCP SDK runs the lifespan per session, not per server.
+    # The RekaClient is shared across sessions; per-request auth is via contextvars.
     server = FastMCP(
         "reka-vision",
-        lifespan=lifespan,
         host=http_host,
         port=http_port,
         streamable_http_path=http_path,

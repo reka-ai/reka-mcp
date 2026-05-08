@@ -169,6 +169,32 @@ class TestHostedHttpServer:
         assert response.json() == {"status": "ok"}
 
 
+class TestHostedClientLifecycle:
+    async def test_shared_client_serves_multiple_sessions(self) -> None:
+        """The shared httpx client must stay open across sessions."""
+        captured_keys: list[str] = []
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            captured_keys.append(req.headers["x-api-key"])
+            return httpx.Response(200, json={"results": []})
+
+        _, server = _hosted_video_server(handler)
+
+        for key in ("rk-session-1", "rk-session-2"):
+            request_ctx, token = _set_request_context({"x-reka-api-key": key})
+            try:
+                await server.call_tool("list_videos", {})
+            finally:
+                request_ctx.reset(token)
+
+        assert captured_keys == ["rk-session-1", "rk-session-2"]
+
+    def test_create_server_has_no_custom_lifespan(self) -> None:
+        """create_server must not register a lifespan that could close shared resources."""
+        server = create_server(api_url=BASE_URL, api_key=None, mode="hosted")
+        assert server.settings.lifespan is None
+
+
 class TestHostedRequestScopedAuth:
     async def test_x_reka_api_key_is_forwarded_as_reka_api_key(self) -> None:
         captured_keys: list[str] = []
