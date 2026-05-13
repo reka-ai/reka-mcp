@@ -24,6 +24,10 @@ def register_search_tools(server: FastMCP, client: RekaClient) -> None:
             "This is the recommended first step for most questions. Instead "
             "of asking ask_video about the entire video, search first to "
             "narrow down the relevant moments.\n\n"
+            "Each result's 'video_url' is a short-lived HTTPS presigned URL "
+            "(expires within hours) — fetch immediately and do not store; "
+            "call search_videos or get_video again for a fresh URL when "
+            "needed.\n\n"
             "Requires search_only or full pipeline."
         ),
         annotations=READ_ONLY,

@@ -63,7 +63,10 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         description=(
             "List all videos in your account, or filter to a specific group "
             "by passing group_id. Shows upload status and which features have "
-            "been indexed for each video."
+            "been indexed for each video. Each video's 'url' is a short-lived "
+            "HTTPS presigned URL (expires within hours) — fetch immediately "
+            "and do not store; call list_videos or get_video again for a "
+            "fresh URL when needed."
         ),
         annotations=READ_ONLY,
     )
@@ -81,7 +84,10 @@ def register_video_tools(server: FastMCP, client: RekaClient) -> None:
         description=(
             "Get detailed information about a video including upload status, "
             "metadata (duration, resolution, fps), and per-feature indexing "
-            "status. Use this to check if upload or indexing is complete."
+            "status. Use this to check if upload or indexing is complete. "
+            "The 'url' field is a short-lived HTTPS presigned URL (expires "
+            "within hours) — fetch immediately and do not store; call "
+            "get_video again for a fresh URL when needed."
         ),
         annotations=READ_ONLY,
     )
