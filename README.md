@@ -92,7 +92,55 @@ inspector to send `X-Reka-API-Key`. Check the server with:
 curl -H "Host: localhost:8080" http://localhost:8080/health
 ```
 
-## Claude Desktop Setup
+## Connect to Hosted MCP (mcp.reka.ai)
+
+No installation required — connect directly to the hosted server with your
+[Reka API key](https://platform.reka.ai).
+
+### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "reka-mcp": {
+      "type": "streamable-http",
+      "url": "https://mcp.reka.ai/mcp",
+      "headers": {
+        "X-Reka-API-Key": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+### Claude Code
+
+```bash
+claude mcp add --transport http reka-mcp https://mcp.reka.ai/mcp \
+  --header "X-Reka-API-Key: your-api-key-here"
+```
+
+### Cursor
+
+Add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "reka-mcp": {
+      "type": "streamable-http",
+      "url": "https://mcp.reka.ai/mcp",
+      "headers": {
+        "X-Reka-API-Key": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+## Claude Desktop Setup (Local)
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -110,7 +158,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-## Cursor Setup
+## Cursor Setup (Local)
 
 Add to `.cursor/mcp.json`:
 
@@ -128,7 +176,7 @@ Add to `.cursor/mcp.json`:
 }
 ```
 
-## Claude Code Setup
+## Claude Code Setup (Local)
 
 ```bash
 claude mcp add reka-mcp -e REKA_VISION_API_KEY=your-api-key-here -- uvx reka-mcp
