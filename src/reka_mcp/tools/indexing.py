@@ -34,8 +34,9 @@ def register_indexing_tools(
 ) -> None:
     base_description = (
         "Index a video for search, QA, or full analysis. Processes the video "
-        "through a pipeline of AI features. This may take 2-10 minutes "
-        "depending on video length.\n\n"
+        "through a pipeline of AI features. Typically takes 3-7 minutes; "
+        "longer for long videos or the 'full' pipeline. Times out after "
+        "10 minutes by default.\n\n"
         "Pipelines:\n"
         "- search_only: transcription + captions + embeddings (enables search_videos)\n"
         "- qa_only: transcription + captions (enables ask_video)\n"

@@ -50,7 +50,7 @@ def register_segment_tools(server: FastMCP, client: RekaClient) -> None:
         prompts: list[str],
         start: float,
         end: float | None = None,
-        threshold: float = 0.3,
+        threshold: float = 0.5,
         rationale: str | None = None,
     ) -> str:
         result = await client.segment_video(

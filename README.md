@@ -99,21 +99,32 @@ No installation required — connect directly to the hosted server with your
 
 ### Claude Desktop
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Claude Desktop does not speak Streamable HTTP directly, so use the
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge. Add to
+`~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "reka-mcp": {
-      "type": "streamable-http",
-      "url": "https://mcp.reka.ai/mcp",
-      "headers": {
-        "X-Reka-API-Key": "your-api-key-here"
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.reka.ai/mcp",
+        "--header",
+        "X-Reka-API-Key:${REKA_VISION_API_KEY}"
+      ],
+      "env": {
+        "REKA_VISION_API_KEY": "your-api-key-here"
       }
     }
   }
 }
 ```
+
+Requires Node.js installed locally. Restart Claude Desktop after editing the
+config.
 
 ### Claude Code
 
