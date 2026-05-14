@@ -41,6 +41,8 @@ def register_indexing_tools(
         "- search_only: transcription + captions + embeddings (enables search_videos)\n"
         "- qa_only: transcription + captions (enables ask_video)\n"
         "- full: all features including object detection (enables all tools)\n\n"
+        "Scene detection is enabled by default and produces scene boundaries "
+        "for get_scenes. Pass scene_detection=False to skip it.\n\n"
         "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
         "Use get_video to check status before calling this tool."
     )
@@ -63,6 +65,7 @@ def register_indexing_tools(
             video_id: str | None = None,
             file_path: str | None = None,
             pipeline: Pipeline = "search_only",
+            scene_detection: bool = True,
             rationale: str | None = None,
         ) -> str:
             if video_id and file_path:
@@ -75,7 +78,9 @@ def register_indexing_tools(
 
             assert video_id is not None
 
-            result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
+            result = await _run_indexing(
+                client, video_id, pipeline, index_timeout, poll_interval, scene_detection
+            )
             return json.dumps(result)
     else:
 
@@ -89,9 +94,12 @@ def register_indexing_tools(
         async def index_video_hosted(
             video_id: str,
             pipeline: Pipeline = "search_only",
+            scene_detection: bool = True,
             rationale: str | None = None,
         ) -> str:
-            result = await _run_indexing(client, video_id, pipeline, index_timeout, poll_interval)
+            result = await _run_indexing(
+                client, video_id, pipeline, index_timeout, poll_interval, scene_detection
+            )
             return json.dumps(result)
 
 
@@ -126,6 +134,7 @@ async def _run_indexing(
     pipeline: Pipeline,
     index_timeout: int,
     poll_interval: int,
+    scene_detection: bool = True,
 ) -> dict[str, str | dict[str, str]]:
     features = PIPELINE_FEATURES[pipeline]
 
@@ -175,7 +184,7 @@ async def _run_indexing(
                         client.trigger_feature(
                             video_id,
                             Feature(feat),
-                            body=_transcript_body(pipeline)
+                            body=_transcript_body(scene_detection)
                             if feat == Feature.TRANSCRIPT
                             else None,
                         )
@@ -197,7 +206,5 @@ async def _run_indexing(
     }
 
 
-def _transcript_body(pipeline: Pipeline) -> dict[str, dict[str, bool]] | None:
-    if pipeline == "full":
-        return {"chunking_config": {"use_scene_detection": True}}
-    return None
+def _transcript_body(scene_detection: bool) -> dict[str, dict[str, bool]]:
+    return {"chunking_config": {"use_scene_detection": scene_detection}}

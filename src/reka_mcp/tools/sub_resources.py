@@ -120,7 +120,8 @@ def register_sub_resource_tools(server: FastMCP, client: RekaClient) -> None:
             "- ask_video for per-scene contextual analysis\n"
             "- segment_video to detect specific objects per scene "
             "(scenes typically fit in segment_video's 15s max range)\n\n"
-            "Requires transcript indexed with scene detection (full pipeline)."
+            "Requires transcript indexed with scene detection (on by default; "
+            "skipped only if index_video was called with scene_detection=False)."
         ),
         annotations=READ_ONLY,
     )

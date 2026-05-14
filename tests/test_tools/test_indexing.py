@@ -356,8 +356,8 @@ class TestFullPipeline:
         assert set(triggered_per_round[1]) == {"captions", "objects"}
 
 
-class TestFullPipelineSceneDetection:
-    """Full pipeline passes use_scene_detection=true when triggering transcript."""
+class TestSceneDetection:
+    """Scene detection is on by default across pipelines and can be overridden."""
 
     async def test_transcript_trigger_includes_scene_detection(
         self, client: RekaClient, mcp_server: FastMCP
@@ -438,7 +438,7 @@ class TestFullPipelineSceneDetection:
             "use_scene_detection": True,
         }
 
-    async def test_search_only_does_not_include_scene_detection(
+    async def test_search_only_includes_scene_detection_by_default(
         self, client: RekaClient, mcp_server: FastMCP
     ) -> None:
         plan_call = 0
@@ -511,7 +511,90 @@ class TestFullPipelineSceneDetection:
             )
 
         assert transcript_body is not None
-        assert "chunking_config" not in transcript_body
+        assert transcript_body["chunking_config"] == {
+            "use_scene_detection": True,
+        }
+
+    async def test_scene_detection_can_be_disabled(
+        self, client: RekaClient, mcp_server: FastMCP
+    ) -> None:
+        plan_call = 0
+        transcript_body: dict | None = None
+
+        def handler(req: httpx.Request) -> httpx.Response:
+            nonlocal plan_call, transcript_body
+            url = str(req.url)
+
+            if url.endswith("/v2/videos/vid-1") and req.method == "GET":
+                return httpx.Response(200, json={"video_id": "vid-1", "status": "uploaded"})
+
+            if "features/plan" in url:
+                plan_call += 1
+                if plan_call == 1:
+                    return httpx.Response(
+                        200,
+                        json=_plan_response(
+                            actionable=["transcript"],
+                            statuses={
+                                "transcript": "none",
+                                "captions": "none",
+                                "embeddings": "none",
+                            },
+                        ),
+                    )
+                else:
+                    return httpx.Response(
+                        200,
+                        json=_plan_response(
+                            done=True,
+                            statuses={
+                                "transcript": "ready",
+                                "captions": "ready",
+                                "embeddings": "ready",
+                            },
+                        ),
+                    )
+
+            if url.endswith("/features/transcript") and req.method == "POST":
+                transcript_body = json.loads(req.content)
+                return httpx.Response(
+                    202,
+                    json={
+                        "video_id": "vid-1",
+                        "feature": "transcript",
+                        "status": "processing",
+                    },
+                )
+
+            for feat in ("captions", "embeddings", "objects"):
+                if url.endswith(f"/features/{feat}") and req.method == "POST":
+                    return httpx.Response(
+                        202,
+                        json={
+                            "video_id": "vid-1",
+                            "feature": feat,
+                            "status": "processing",
+                        },
+                    )
+
+            return httpx.Response(404, json={"error": {"message": "not found"}})
+
+        mock_client(client, handler)
+
+        with patch("reka_mcp.tools.indexing.asyncio.sleep", new_callable=AsyncMock):
+            await mcp_server.call_tool(
+                "index_video",
+                {
+                    "video_id": "vid-1",
+                    "pipeline": "search_only",
+                    "scene_detection": False,
+                },
+            )
+
+        assert transcript_body is not None
+        assert transcript_body["chunking_config"] == {
+            "use_scene_detection": False,
+        }
 
 
 class TestAlreadyIndexed:
