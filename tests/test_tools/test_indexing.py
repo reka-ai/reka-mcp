@@ -107,7 +107,7 @@ class TestSearchOnlyPipeline:
                         ),
                     )
 
-            for feat in ("transcript", "captions", "embeddings", "objects"):
+            for feat in ("transcript", "captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     triggered.append(feat)
                     return httpx.Response(
@@ -222,7 +222,7 @@ class TestQaOnlyPipeline:
                         ),
                     )
 
-            for feat in ("transcript", "captions", "embeddings", "objects"):
+            for feat in ("transcript", "captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     triggered.append(feat)
                     return httpx.Response(
@@ -247,113 +247,6 @@ class TestQaOnlyPipeline:
         body = json.loads(tool_result_text(result))
         assert body["status"] == "ready"
         assert "embeddings" not in triggered
-
-
-class TestFullPipeline:
-    """Scenario 3: full pipeline triggers captions + objects in parallel."""
-
-    async def test_parallel_triggers_after_transcript(
-        self, client: RekaClient, mcp_server: FastMCP
-    ) -> None:
-        plan_call = 0
-        triggered_per_round: list[list[str]] = []
-        current_round: list[str] = []
-
-        def handler(req: httpx.Request) -> httpx.Response:
-            nonlocal plan_call, current_round
-            url = str(req.url)
-
-            if url.endswith("/v2/videos/vid-1") and req.method == "GET":
-                return httpx.Response(200, json={"video_id": "vid-1", "status": "uploaded"})
-
-            if "features/plan" in url:
-                if current_round:
-                    triggered_per_round.append(current_round)
-                    current_round = []
-                plan_call += 1
-                if plan_call == 1:
-                    return httpx.Response(
-                        200,
-                        json=_plan_response(
-                            actionable=["transcript"],
-                            statuses={
-                                "transcript": "none",
-                                "captions": "none",
-                                "embeddings": "none",
-                                "objects": "none",
-                            },
-                        ),
-                    )
-                elif plan_call == 2:
-                    return httpx.Response(
-                        200,
-                        json=_plan_response(
-                            actionable=["captions", "objects"],
-                            statuses={
-                                "transcript": "ready",
-                                "captions": "none",
-                                "embeddings": "none",
-                                "objects": "none",
-                            },
-                        ),
-                    )
-                elif plan_call == 3:
-                    return httpx.Response(
-                        200,
-                        json=_plan_response(
-                            actionable=["embeddings"],
-                            statuses={
-                                "transcript": "ready",
-                                "captions": "ready",
-                                "embeddings": "none",
-                                "objects": "ready",
-                            },
-                        ),
-                    )
-                else:
-                    return httpx.Response(
-                        200,
-                        json=_plan_response(
-                            done=True,
-                            statuses={
-                                "transcript": "ready",
-                                "captions": "ready",
-                                "embeddings": "ready",
-                                "objects": "ready",
-                            },
-                        ),
-                    )
-
-            for feat in ("transcript", "captions", "embeddings", "objects"):
-                if url.endswith(f"/features/{feat}") and req.method == "POST":
-                    current_round.append(feat)
-                    return httpx.Response(
-                        202,
-                        json={
-                            "video_id": "vid-1",
-                            "feature": feat,
-                            "status": "processing",
-                        },
-                    )
-
-            return httpx.Response(404, json={"error": {"message": "not found"}})
-
-        mock_client(client, handler)
-
-        with patch("reka_mcp.tools.indexing.asyncio.sleep", new_callable=AsyncMock):
-            result = await mcp_server.call_tool(
-                "index_video",
-                {"video_id": "vid-1", "pipeline": "full"},
-            )
-
-        if current_round:
-            triggered_per_round.append(current_round)
-
-        body = json.loads(tool_result_text(result))
-        assert body["status"] == "ready"
-        # Round 1: transcript only; Round 2: captions + objects in parallel
-        assert triggered_per_round[0] == ["transcript"]
-        assert set(triggered_per_round[1]) == {"captions", "objects"}
 
 
 class TestSceneDetection:
@@ -383,7 +276,6 @@ class TestSceneDetection:
                                 "transcript": "none",
                                 "captions": "none",
                                 "embeddings": "none",
-                                "objects": "none",
                             },
                         ),
                     )
@@ -396,7 +288,6 @@ class TestSceneDetection:
                                 "transcript": "ready",
                                 "captions": "ready",
                                 "embeddings": "ready",
-                                "objects": "ready",
                             },
                         ),
                     )
@@ -412,7 +303,7 @@ class TestSceneDetection:
                     },
                 )
 
-            for feat in ("captions", "embeddings", "objects"):
+            for feat in ("captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     return httpx.Response(
                         202,
@@ -489,7 +380,7 @@ class TestSceneDetection:
                     },
                 )
 
-            for feat in ("captions", "embeddings", "objects"):
+            for feat in ("captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     return httpx.Response(
                         202,
@@ -566,7 +457,7 @@ class TestSceneDetection:
                     },
                 )
 
-            for feat in ("captions", "embeddings", "objects"):
+            for feat in ("captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     return httpx.Response(
                         202,
@@ -624,7 +515,7 @@ class TestAlreadyIndexed:
                     ),
                 )
 
-            for feat in ("transcript", "captions", "embeddings", "objects"):
+            for feat in ("transcript", "captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     triggered.append(feat)
                     return httpx.Response(
@@ -689,7 +580,7 @@ class TestTimeout:
                     ),
                 )
 
-            for feat in ("transcript", "captions", "embeddings", "objects"):
+            for feat in ("transcript", "captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     return httpx.Response(
                         202,
@@ -784,7 +675,7 @@ class TestFeatureFailure:
                         ),
                     )
 
-            for feat in ("transcript", "captions", "embeddings", "objects"):
+            for feat in ("transcript", "captions", "embeddings"):
                 if url.endswith(f"/features/{feat}") and req.method == "POST":
                     return httpx.Response(
                         202,

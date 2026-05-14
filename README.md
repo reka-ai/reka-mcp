@@ -2,7 +2,7 @@
 
 mcp-name: ai.reka/mcp
 
-MCP server that lets AI agents upload, index, search, and analyze videos through the Reka Vision API. Agents can search across videos using natural language, ask questions about video content with visual analysis, and read processed data like transcripts, captions, scenes, and detected objects.
+MCP server that lets AI agents upload, index, search, and analyze videos through the Reka Vision API. Agents can search across videos using natural language, ask questions about video content with visual analysis, detect objects in specific time ranges with text prompts, and read processed data like transcripts, captions, and scenes.
 
 ## Quick Start
 

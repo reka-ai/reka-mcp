@@ -251,11 +251,6 @@ class TestGetFeatureCatalog:
                     "description": "Vector embeddings",
                     "depends_on": ["transcript", "captions"],
                 },
-                {
-                    "name": "objects",
-                    "description": "Object detection",
-                    "depends_on": ["transcript"],
-                },
             ]
         }
         mock_client(
@@ -267,7 +262,6 @@ class TestGetFeatureCatalog:
         assert "transcript" in body
         assert "captions" in body
         assert "embeddings" in body
-        assert "objects" in body
         assert body["transcript"]["depends_on"] == []
         assert body["transcript"]["produces"] == ["transcript", "scenes"]
 

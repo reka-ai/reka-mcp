@@ -26,7 +26,7 @@ by the MCP server; upload files outside MCP first and pass the resulting URL.
 4. poll get_video until the requested features are "ready":
    - search_only needs transcript, captions, and embeddings
    - qa_only needs transcript and captions
-   - full needs transcript, captions, embeddings, and objects
+   - full needs transcript, captions, and embeddings
 
 Hosted index_video returns quickly after triggering work, so polling get_video \
 is part of the normal workflow. Local stdio index_video may wait until indexing \
@@ -70,7 +70,7 @@ specific segments side by side
 ## Pipeline selection
 - search_only: enables search_videos (transcription + captions + embeddings)
 - qa_only: enables ask_video (transcription + captions)
-- full: enables everything (adds object indexing on top of search + QA)
+- full: enables everything (transcription + captions + embeddings)
 
 ## When to use ask_video directly
 Only when you already have a specific time range, or the question is about \

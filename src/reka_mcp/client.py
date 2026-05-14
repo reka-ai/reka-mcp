@@ -318,24 +318,6 @@ class RekaClient:
         )
         return data
 
-    async def get_objects(
-        self,
-        video_id: str,
-        *,
-        object_type: str | None = None,
-        start: float | None = None,
-        end: float | None = None,
-        max_items: int | None = None,
-    ) -> list[JsonDict]:
-
-        params = self._time_range_params(start, end)
-        if object_type is not None:
-            params["type"] = object_type
-        data = await self.paginate(
-            f"/v2/videos/{video_id}/objects", params=params, max_items=max_items
-        )
-        return data
-
     def _time_range_params(
         self,
         start: float | None = None,

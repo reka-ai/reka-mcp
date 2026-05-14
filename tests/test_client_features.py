@@ -89,7 +89,7 @@ class TestTriggerFeature:
         await client.trigger_feature("vid-1", "transcript", force=True)
 
     async def test_all_triggerable_features(self, client: RekaClient) -> None:
-        for feature in ("transcript", "captions", "embeddings", "objects"):
+        for feature in ("transcript", "captions", "embeddings"):
 
             def handler(req: httpx.Request, _f: str = feature) -> httpx.Response:
                 assert str(req.url).endswith(f"/features/{_f}")

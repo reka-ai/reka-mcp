@@ -3,7 +3,7 @@
   "name": "ai.reka/mcp",
   "title": "Reka",
   "description": "Understand your videos with Reka AI — search, ask questions, and extract insights.",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "remotes": [
     {
       "type": "streamable-http",
@@ -22,7 +22,7 @@
     {
       "registryType": "pypi",
       "identifier": "reka-mcp",
-      "version": "0.1.9",
+      "version": "0.1.10",
       "transport": {
         "type": "stdio"
       }

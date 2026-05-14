@@ -22,11 +22,10 @@ class TestPipelineFeatures:
             "transcript",
             "captions",
             "embeddings",
-            "objects",
         }
 
     def test_all_pipeline_features_are_triggerable(self) -> None:
-        triggerable = {"transcript", "captions", "embeddings", "objects"}
+        triggerable = {"transcript", "captions", "embeddings"}
         for pipeline, features in PIPELINE_FEATURES.items():
             for feat in features:
                 assert feat in triggerable, (

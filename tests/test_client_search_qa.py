@@ -327,47 +327,6 @@ class TestGetScenes:
         assert result[0]["index"] == 0
 
 
-class TestGetObjects:
-    async def test_fetches_objects(self, client: RekaClient) -> None:
-        mock_client(
-            client,
-            lambda req: httpx.Response(
-                200,
-                json={
-                    "data": [
-                        {
-                            "start": 0.0,
-                            "end": 1.0,
-                            "detections": [{"type": "person", "bbox": [100, 50, 300, 400]}],
-                        }
-                    ],
-                    "next_page_token": None,
-                },
-            ),
-        )
-        result = await client.get_objects("v1")
-        assert len(result) == 1
-        assert result[0]["detections"][0]["type"] == "person"
-
-    async def test_passes_type_filter(self, client: RekaClient) -> None:
-        def handler(req: httpx.Request) -> httpx.Response:
-            assert "type=person" in str(req.url)
-            return httpx.Response(200, json={"data": [], "next_page_token": None})
-
-        mock_client(client, handler)
-        await client.get_objects("v1", object_type="person")
-
-    async def test_passes_time_range(self, client: RekaClient) -> None:
-        def handler(req: httpx.Request) -> httpx.Response:
-            url = str(req.url)
-            assert "start=0.0" in url
-            assert "end=10.0" in url
-            return httpx.Response(200, json={"data": [], "next_page_token": None})
-
-        mock_client(client, handler)
-        await client.get_objects("v1", start=0.0, end=10.0)
-
-
 class TestGetFeatureCatalog:
     async def test_fetches_catalog(self, client: RekaClient) -> None:
         catalog = {

@@ -11,7 +11,6 @@ class Feature(StrEnum):
     TRANSCRIPT = "transcript"
     CAPTIONS = "captions"
     EMBEDDINGS = "embeddings"
-    OBJECTS = "objects"
 
 
 class FeatureStatus(StrEnum):
@@ -28,5 +27,5 @@ Pipeline = Literal["search_only", "qa_only", "full"]
 PIPELINE_FEATURES: dict[Pipeline, set[Feature]] = {
     "search_only": {Feature.TRANSCRIPT, Feature.CAPTIONS, Feature.EMBEDDINGS},
     "qa_only": {Feature.TRANSCRIPT, Feature.CAPTIONS},
-    "full": {Feature.TRANSCRIPT, Feature.CAPTIONS, Feature.EMBEDDINGS, Feature.OBJECTS},
+    "full": {Feature.TRANSCRIPT, Feature.CAPTIONS, Feature.EMBEDDINGS},
 }

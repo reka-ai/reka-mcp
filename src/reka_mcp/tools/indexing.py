@@ -40,7 +40,7 @@ def register_indexing_tools(
         "Pipelines:\n"
         "- search_only: transcription + captions + embeddings (enables search_videos)\n"
         "- qa_only: transcription + captions (enables ask_video)\n"
-        "- full: all features including object detection (enables all tools)\n\n"
+        "- full: transcription + captions + embeddings (enables all tools)\n\n"
         "Scene detection is enabled by default and produces scene boundaries "
         "for get_scenes. Pass scene_detection=False to skip it.\n\n"
         "Prerequisites: if using video_id, the video must be in 'uploaded' status. "
